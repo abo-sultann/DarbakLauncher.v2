@@ -1,9 +1,6 @@
 name: Import Launcher.2026 snapshot
 
 on:
-  push:
-    paths:
-      - '.github/workflows/import-launcher2026.yml'
   workflow_dispatch:
 
 permissions:
@@ -23,18 +20,9 @@ jobs:
           rm -rf /tmp/launcher2026
           git clone --depth 1 --branch main https://github.com/abo-sultann/Launcher.2026.git /tmp/launcher2026
 
-      - name: Replace destination working tree with source snapshot
+      - name: Replace destination with source snapshot
         run: |
-          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -a /tmp/launcher2026/. .
-          rm -rf .git
-          git init
-          git remote add origin https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git
-          git fetch origin main
-          git checkout -B main origin/main
-          find . -mindepth 1 -maxdepth 1 ! -name .git -exec rm -rf {} +
-          cp -a /tmp/launcher2026/. .
-          rm -rf .git
+          rsync -a --delete --exclude='.git/' /tmp/launcher2026/ ./
 
       - name: Commit imported snapshot
         run: |
