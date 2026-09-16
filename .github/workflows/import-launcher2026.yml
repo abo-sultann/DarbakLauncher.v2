@@ -1,6 +1,10 @@
 name: Import Launcher.2026 snapshot
 
 on:
+  push:
+    branches: [ main ]
+    paths:
+      - '.import-launcher2026-trigger'
   workflow_dispatch:
 
 permissions:
