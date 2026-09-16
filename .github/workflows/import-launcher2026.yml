@@ -26,7 +26,7 @@ jobs:
 
       - name: Replace destination with source snapshot
         run: |
-          rsync -a --delete --exclude='.git/' /tmp/launcher2026/ ./
+          rsync -a --delete --exclude='.git/' --exclude='.github/workflows/' /tmp/launcher2026/ ./
 
       - name: Commit imported snapshot
         run: |
