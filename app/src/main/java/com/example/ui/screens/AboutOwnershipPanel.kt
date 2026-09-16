@@ -73,10 +73,17 @@ fun AboutOwnershipPanel(accent: Color, onOpenDiagnostics: (() -> Unit)? = null) 
                     textAlign = TextAlign.Center
                 )
                 Text(
-                    "تصميم وتطوير  •  أبوسلطان",
+                    "تصميم وتطوير — أبوسلطان",
                     color = DarbakGold,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    "واجهة موحدة .. تجربة أفضل",
+                    color = TextSecondary,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
                     textAlign = TextAlign.Center
                 )
             }
