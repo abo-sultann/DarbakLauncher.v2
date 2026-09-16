@@ -155,6 +155,7 @@ private fun WidgetStylePreview(style: WidgetStyle) {
         WidgetType.APPS -> AppsStylePreview(style)
         WidgetType.CONTROLS -> ControlsStylePreview(style)
         WidgetType.MAINTENANCE -> MaintenanceStylePreview()
+        WidgetType.DARBAK_CENTER -> DarbakCenterStylePreview()
     }
 }
 
@@ -188,6 +189,17 @@ private fun SpeedStylePreview(style: WidgetStyle) {
 @Composable private fun TripStylePreview(style: WidgetStyle) { Row(horizontalArrangement = Arrangement.spacedBy(12.dp), verticalAlignment = Alignment.CenterVertically) { Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("124", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.Black); Text("كم", color = TextSecondary, fontSize = 7.sp) }; Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("1:46", color = TextPrimary, fontSize = 17.sp, fontWeight = FontWeight.Bold); Text("مدة", color = TextSecondary, fontSize = 7.sp) }; if (style == WidgetStyle.TRIP_DASHBOARD || style == WidgetStyle.TRIP_FULL_METRICS) Column(horizontalAlignment = Alignment.CenterHorizontally) { Text("72", color = TextSecondary, fontSize = 17.sp, fontWeight = FontWeight.Bold); Text("متوسط", color = TextSecondary, fontSize = 7.sp) } } }
 @Composable private fun AppsStylePreview(style: WidgetStyle) { Row(horizontalArrangement = Arrangement.spacedBy(7.dp)) { val count = when (style) { WidgetStyle.APPS_GRID_2X2 -> 4; WidgetStyle.APPS_GRID_3X2 -> 6; WidgetStyle.APPS_GRID_4X2 -> 8; else -> 5 }; repeat(count.coerceAtMost(6)) { i -> Surface(color = if (i % 2 == 0) TextPrimary else TextSecondary, shape = RoundedCornerShape(7.dp), modifier = Modifier.size(28.dp)) { Box(contentAlignment = Alignment.Center) { Icon(Icons.Default.Apps, null, tint = CarbonDark, modifier = Modifier.size(15.dp)) } } } } }
 @Composable private fun ControlsStylePreview(style: WidgetStyle) { Row(horizontalArrangement = Arrangement.spacedBy(if (style == WidgetStyle.CONTROLS_LARGE_AUTOMOTIVE) 12.dp else 7.dp), verticalAlignment = Alignment.CenterVertically) { listOf(Icons.Default.VolumeDown, Icons.Default.SkipPrevious, Icons.Default.PlayArrow, Icons.Default.SkipNext, Icons.Default.VolumeUp).forEach { icon -> Surface(color = if (icon == Icons.Default.PlayArrow) TextPrimary else CarbonCard, shape = if (style == WidgetStyle.CONTROLS_CIRCULAR) CircleShape else RoundedCornerShape(8.dp), modifier = Modifier.size(if (style == WidgetStyle.CONTROLS_LARGE_AUTOMOTIVE) 34.dp else 27.dp)) { Box(contentAlignment = Alignment.Center) { Icon(icon, null, tint = if (icon == Icons.Default.PlayArrow) CarbonDark else TextPrimary, modifier = Modifier.size(15.dp)) } } } } }
+
+@Composable
+private fun DarbakCenterStylePreview() {
+    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Icon(Icons.Default.Hub, null, tint = TextPrimary, modifier = Modifier.size(28.dp))
+        Column {
+            Text("مركز دربك", color = TextPrimary, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+            Text("تطبيقات دربك", color = TextSecondary, fontSize = 8.sp)
+        }
+    }
+}
 
 @Composable
 private fun MaintenanceStylePreview() {

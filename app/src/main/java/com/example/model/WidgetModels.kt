@@ -10,7 +10,8 @@ enum class WidgetType(val arabicTitle: String, val iconRes: String) {
     TRIP("رحلتي", "directions_car"),
     APPS("التطبيقات والمفضلة", "apps"),
     CONTROLS("التحكم السريع", "tune"),
-    MAINTENANCE("الصيانة", "build")
+    MAINTENANCE("الصيانة", "build"),
+    DARBAK_CENTER("مركز دربك", "hub")
 }
 
 enum class WidgetSurfaceStyle(val arabicName: String) {
@@ -107,7 +108,11 @@ enum class WidgetStyle(val type: WidgetType, val arabicName: String, val descrip
 
     MAINTENANCE_VERTICAL(WidgetType.MAINTENANCE, "شريط الصيانة", "ستة عدادات رأسية على حافة الشاشة"),
     MAINTENANCE_GRID(WidgetType.MAINTENANCE, "لوحة الصيانة", "شبكة 2 × 3 تعرض جميع عناصر الصيانة"),
-    MAINTENANCE_ALERTS(WidgetType.MAINTENANCE, "الأقرب للصيانة", "ملخص ذكي لأقرب ثلاثة عناصر تحتاج انتباه")
+    MAINTENANCE_ALERTS(WidgetType.MAINTENANCE, "الأقرب للصيانة", "ملخص ذكي لأقرب ثلاثة عناصر تحتاج انتباه"),
+
+    DARBAK_CENTER_CARD(WidgetType.DARBAK_CENTER, "بطاقة مركز دربك", "بطاقة بصرية تعرض حالة تطبيقات دربك وتفتح المركز"),
+    DARBAK_CENTER_COMPACT(WidgetType.DARBAK_CENTER, "مركز دربك المدمج", "عرض مدمج لحالة تطبيقات دربك"),
+    DARBAK_CENTER_WIDE(WidgetType.DARBAK_CENTER, "مركز دربك العريض", "عرض عريض لحالة وسلسلة تطبيقات دربك")
 }
 
 /**
@@ -165,6 +170,11 @@ fun preferredWidgetStylesFor(type: WidgetType): List<WidgetStyle> = when (type) 
         WidgetStyle.MAINTENANCE_GRID,
         WidgetStyle.MAINTENANCE_ALERTS
     )
+    WidgetType.DARBAK_CENTER -> listOf(
+        WidgetStyle.DARBAK_CENTER_CARD,
+        WidgetStyle.DARBAK_CENTER_COMPACT,
+        WidgetStyle.DARBAK_CENTER_WIDE
+    )
 }
 
 /** Maps every 1.x near-duplicate to the closest rebuilt construction. */
@@ -217,6 +227,7 @@ fun modernWidgetStyle(style: WidgetStyle): WidgetStyle {
             else -> WidgetStyle.CONTROLS_HORIZONTAL_BAR
         }
         WidgetType.MAINTENANCE -> WidgetStyle.MAINTENANCE_VERTICAL
+        WidgetType.DARBAK_CENTER -> WidgetStyle.DARBAK_CENTER_CARD
     }
 }
 
@@ -246,7 +257,7 @@ data class WidgetItem(
     companion object {
         fun defaultSurfaceFor(type: WidgetType): WidgetSurfaceStyle = when (type) {
             WidgetType.CLOCK, WidgetType.SPEEDOMETER, WidgetType.DATE, WidgetType.GPS -> WidgetSurfaceStyle.TRANSPARENT
-            WidgetType.MUSIC, WidgetType.MAP, WidgetType.TRIP, WidgetType.APPS, WidgetType.CONTROLS, WidgetType.MAINTENANCE -> WidgetSurfaceStyle.GLASS
+            WidgetType.MUSIC, WidgetType.MAP, WidgetType.TRIP, WidgetType.APPS, WidgetType.CONTROLS, WidgetType.MAINTENANCE, WidgetType.DARBAK_CENTER -> WidgetSurfaceStyle.GLASS
         }
 
         fun recommendedSize(type: WidgetType, preset: WidgetSizePreset): Pair<Float, Float> {
@@ -257,6 +268,15 @@ data class WidgetItem(
                     WidgetSizePreset.MEDIUM -> .15f to .82f
                     WidgetSizePreset.LARGE -> .17f to .94f
                     WidgetSizePreset.WIDE -> .22f to .94f
+                }
+            }
+            if (type == WidgetType.DARBAK_CENTER) {
+                return when (preset) {
+                    WidgetSizePreset.CONTENT -> .24f to .18f
+                    WidgetSizePreset.SMALL -> .22f to .16f
+                    WidgetSizePreset.MEDIUM -> .32f to .22f
+                    WidgetSizePreset.LARGE -> .40f to .30f
+                    WidgetSizePreset.WIDE -> .48f to .20f
                 }
             }
             return when (preset) {
@@ -270,7 +290,7 @@ data class WidgetItem(
                     WidgetType.TRIP -> .20f to .23f
                     WidgetType.APPS -> .30f to .16f
                     WidgetType.CONTROLS -> .24f to .15f
-                    WidgetType.MAINTENANCE -> error("handled above")
+                    WidgetType.MAINTENANCE, WidgetType.DARBAK_CENTER -> error("handled above")
                 }
                 WidgetSizePreset.SMALL -> when (type) {
                     WidgetType.CLOCK -> .23f to .15f
@@ -282,7 +302,7 @@ data class WidgetItem(
                     WidgetType.TRIP -> .24f to .27f
                     WidgetType.APPS -> .34f to .19f
                     WidgetType.CONTROLS -> .29f to .18f
-                    WidgetType.MAINTENANCE -> error("handled above")
+                    WidgetType.MAINTENANCE, WidgetType.DARBAK_CENTER -> error("handled above")
                 }
                 WidgetSizePreset.MEDIUM -> .32f to .30f
                 WidgetSizePreset.LARGE -> .43f to .42f
@@ -291,7 +311,7 @@ data class WidgetItem(
                     WidgetType.SPEEDOMETER -> .34f to .25f
                     WidgetType.MUSIC, WidgetType.APPS, WidgetType.CONTROLS -> .55f to .22f
                     WidgetType.MAP, WidgetType.TRIP -> .48f to .30f
-                    WidgetType.MAINTENANCE -> error("handled above")
+                    WidgetType.MAINTENANCE, WidgetType.DARBAK_CENTER -> error("handled above")
                 }
             }
         }
@@ -309,6 +329,9 @@ data class WidgetItem(
             if (item.hasFreeGeometry()) return item
             if (item.type == WidgetType.MAINTENANCE) {
                 return item.copy(xFraction = .835f, yFraction = .025f, widthFraction = .15f, heightFraction = .92f, zIndex = item.order)
+            }
+            if (item.type == WidgetType.DARBAK_CENTER) {
+                return item.copy(xFraction = .38f, yFraction = .38f, widthFraction = .24f, heightFraction = .18f, zIndex = item.order)
             }
             val g = legacyGeometryFor(item.order, item.spanX)
             return item.copy(xFraction = g[0], yFraction = g[1], widthFraction = g[2], heightFraction = g[3], zIndex = item.order)

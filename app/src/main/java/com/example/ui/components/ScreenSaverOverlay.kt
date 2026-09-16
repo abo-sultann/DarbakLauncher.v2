@@ -397,6 +397,7 @@ private fun screenSaverShape(type: WidgetType) = when (type) {
     WidgetType.APPS -> RoundedCornerShape(22.dp)
     WidgetType.CONTROLS -> RoundedCornerShape(20.dp)
     WidgetType.MAINTENANCE -> RoundedCornerShape(18.dp)
+    WidgetType.DARBAK_CENTER -> RoundedCornerShape(18.dp)
 }
 
 @Composable
@@ -417,7 +418,7 @@ private fun RenderScreenSaverWidget(
         WidgetType.MUSIC -> ScreenSaverMusicSummary(style, playback)
         WidgetType.MAP -> ScreenSaverMapSummary(style, gps, trip, map)
         WidgetType.TRIP -> ScreenSaverTripSummary(style, trip)
-        WidgetType.APPS, WidgetType.CONTROLS, WidgetType.MAINTENANCE -> Unit
+        WidgetType.APPS, WidgetType.CONTROLS, WidgetType.MAINTENANCE, WidgetType.DARBAK_CENTER -> Unit
     }
 }
 
@@ -520,4 +521,5 @@ private fun defaultScreenSaverStyle(type: WidgetType): WidgetStyle = when (type)
     WidgetType.APPS -> WidgetStyle.APPS_ICONS_ONLY
     WidgetType.CONTROLS -> WidgetStyle.CONTROLS_HORIZONTAL_BAR
     WidgetType.MAINTENANCE -> WidgetStyle.MAINTENANCE_VERTICAL
+    WidgetType.DARBAK_CENTER -> WidgetStyle.DARBAK_CENTER_CARD
 }

@@ -147,6 +147,7 @@ class PreferencesManager(context: Context) {
                         WidgetType.APPS -> WidgetStyle.APPS_HORIZONTAL_DOCK
                         WidgetType.CONTROLS -> WidgetStyle.CONTROLS_CARD
                         WidgetType.MAINTENANCE -> WidgetStyle.MAINTENANCE_VERTICAL
+                        WidgetType.DARBAK_CENTER -> WidgetStyle.DARBAK_CENTER_CARD
                     }
                 }
 

@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import com.example.model.*
 import com.example.ui.components.CarScreen
+import com.example.ui.components.DarbakCenterDialog
 import com.example.ui.components.WidgetFrame
 import com.example.ui.components.WidgetLayoutDialog
 import com.example.ui.components.WidgetLibraryDialog
@@ -36,6 +37,7 @@ fun HomeScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
     val tripData by viewModel.tripData.collectAsState()
     val activeMap by viewModel.activeMap.collectAsState()
     val navigationTarget by viewModel.offroadNavigationTarget.collectAsState()
+    val showDarbakCenterDialog by viewModel.showDarbakCenterDialog.collectAsState()
 
     val visualWidgets = widgets
 
@@ -270,6 +272,13 @@ fun HomeScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                 }
             )
         }
+
+        if (showDarbakCenterDialog) {
+            DarbakCenterDialog(
+                viewModel = viewModel,
+                onDismiss = { viewModel.closeDarbakCenter() }
+            )
+        }
     }
 }
 
@@ -284,6 +293,7 @@ private fun backgroundFocusGeometry(type: WidgetType): FloatArray = when (type) 
     WidgetType.APPS -> floatArrayOf(.31f, .79f, .38f, .17f)
     WidgetType.CONTROLS -> floatArrayOf(.72f, .75f, .25f, .17f)
     WidgetType.MAINTENANCE -> floatArrayOf(.835f, .025f, .15f, .92f)
+    WidgetType.DARBAK_CENTER -> floatArrayOf(.38f, .38f, .24f, .18f)
 }
 
 private fun backgroundFocusStyle(type: WidgetType): WidgetStyle = when (type) {
@@ -297,6 +307,7 @@ private fun backgroundFocusStyle(type: WidgetType): WidgetStyle = when (type) {
     WidgetType.APPS -> WidgetStyle.APPS_HORIZONTAL_DOCK
     WidgetType.CONTROLS -> WidgetStyle.CONTROLS_HORIZONTAL_BAR
     WidgetType.MAINTENANCE -> WidgetStyle.MAINTENANCE_VERTICAL
+    WidgetType.DARBAK_CENTER -> WidgetStyle.DARBAK_CENTER_CARD
 }
 
 @Composable
@@ -325,5 +336,6 @@ private fun RenderWidgetContent(
         WidgetType.APPS -> AppsWidget(w.style, apps, onOpenAppDrawer = { vm.navigateTo(CarScreen.APPS) }, onLaunchApp = { vm.launchApp(it) }, interactionEnabled = !isDesignMode)
         WidgetType.CONTROLS -> ControlsWidget(w.style, p, { vm.adjustVolume(it) }, { vm.toggleMute() }, { vm.togglePlayPause() }, { vm.playNext() }, { vm.playPrevious() })
         WidgetType.MAINTENANCE -> MaintenanceWidget(w.style, interactionEnabled = !isDesignMode)
+        WidgetType.DARBAK_CENTER -> DarbakCenterWidget(w.style, vm, interactionEnabled = !isDesignMode, onOpenCenter = { vm.openDarbakCenter() })
     }
 }
