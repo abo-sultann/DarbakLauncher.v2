@@ -817,7 +817,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
 
     fun openDarbakCenter() { _showDarbakCenterDialog.value = true; refreshDarbakApps() }
     fun closeDarbakCenter() { _showDarbakCenterDialog.value = false }
-    fun refreshDarbakApps() { darbakCenterManager.refreshApps() }
+    fun refreshDarbakApps() {
+        viewModelScope.launch(Dispatchers.IO) {
+            darbakCenterManager.refreshAppsAsync()
+        }
+    }
     fun launchDarbakApp(packageName: String) {
         (getApplication<Application>() as? com.example.CarLauncherApp)?.prepareForExternalActivity()
         darbakCenterManager.launchApp(packageName)

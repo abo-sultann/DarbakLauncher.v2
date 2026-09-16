@@ -7,6 +7,7 @@ import com.example.data.DarbakMaintenanceStatusProvider
 import com.example.data.DarbakStatusProvider
 import com.example.model.DarbakAppStatus
 import com.example.model.DarbakIntegrationState
+import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
@@ -23,9 +24,10 @@ class DarbakCenterManagerTest {
     private lateinit var manager: DarbakCenterManager
 
     @Before
-    fun setUp() {
+    fun setUp() = runBlocking {
         context = ApplicationProvider.getApplicationContext()
         manager = DarbakCenterManager(context)
+        manager.refreshAppsAsync()
     }
 
     @Test
@@ -50,7 +52,7 @@ class DarbakCenterManagerTest {
     }
 
     @Test
-    fun testCustomStatusProviderExtensibility() {
+    fun testCustomStatusProviderExtensibility() = runBlocking {
         val customPackage = "com.abosultan.darbakcustom"
         val testProvider = object : DarbakStatusProvider {
             override val targetPackageName: String = customPackage
@@ -65,7 +67,7 @@ class DarbakCenterManagerTest {
         }
 
         manager.registerStatusProvider(testProvider)
-        manager.refreshApps()
+        manager.refreshAppsAsync()
 
         val apps = manager.darbakApps.value
         assertNotNull(apps)

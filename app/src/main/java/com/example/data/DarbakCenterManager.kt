@@ -96,7 +96,6 @@ class DarbakCenterManager(private val context: Context) {
 
     init {
         registerStatusProvider(DarbakMaintenanceStatusProvider())
-        refreshApps()
     }
 
     fun registerStatusProvider(provider: DarbakStatusProvider) {
@@ -121,7 +120,7 @@ class DarbakCenterManager(private val context: Context) {
         }.getOrDefault(false)
     }
 
-    fun refreshApps() {
+    suspend fun refreshAppsAsync() = withContext(Dispatchers.IO) {
         val knownApps = listOf(
             DarbakAppDefinition(
                 id = "darbak_maintenance",
@@ -151,7 +150,7 @@ class DarbakCenterManager(private val context: Context) {
                 id = "darb_al_sout2",
                 packageName = null,
                 titleArabic = "درب الصوت 2",
-                descriptionArabic = "مشغل الوسائط والملفات الصوتية",
+                descriptionArabic = "مزامنة ملفات الصوت إلى مجلد الأصوات",
                 providerUri = null,
                 integrationState = DarbakIntegrationState.UNCONFIGURED
             )
@@ -185,10 +184,6 @@ class DarbakCenterManager(private val context: Context) {
         }
 
         _darbakApps.value = updatedList
-    }
-
-    suspend fun refreshAppsAsync() = withContext(Dispatchers.IO) {
-        refreshApps()
     }
 
     private data class DarbakAppDefinition(
