@@ -1,0 +1,66 @@
+name: Build Launcher 2026 APK
+
+on:
+  push:
+    branches: [ main, darbak-platform-v1 ]
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+  workflow_dispatch:
+
+concurrency:
+  group: launcher-2026-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Restore fixed signing key
+        run: |
+          base64 --decode ci/launcher-stable.jks.b64 > app/launcher-stable.jks
+          keytool -list -keystore app/launcher-stable.jks -storepass android -alias androiddebugkey >/dev/null
+
+      - name: Grant execute permission
+        run: chmod +x ./gradlew
+
+      - name: Test Android 7 startup, lifecycle, storage, widgets, and maintenance mileage
+        run: >-
+          ./gradlew :app:testDebugUnitTest
+          --tests com.example.LauncherApi25SmokeTest
+          --tests com.example.LongUseStabilityTest
+          --tests com.example.WidgetModelsTest
+          --tests com.example.MaintenanceMileageBridgeTest
+          --stacktrace --no-daemon
+
+      - name: Build signed Stable APK
+        env:
+          KEYSTORE_PATH: ${{ github.workspace }}/app/launcher-stable.jks
+        run: ./gradlew :app:assembleRelease --stacktrace --no-daemon
+
+      - name: Upload Stable APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Launcher-2026-Stable-${{ github.ref_name }}
+          path: app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 1
