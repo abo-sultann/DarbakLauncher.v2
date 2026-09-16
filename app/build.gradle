@@ -1,0 +1,17 @@
+plugins { id 'com.android.application' }
+
+android {
+    namespace 'com.abosultan.darbaklauncher'
+    compileSdk 35
+    defaultConfig {
+        applicationId 'com.abosultan.darbaklauncher'
+        minSdk 25
+        targetSdk 25
+        versionCode 1
+        versionName '2.0-test1'
+    }
+    buildTypes {
+        debug { minifyEnabled false }
+        release { minifyEnabled false }
+    }
+}
