@@ -6,10 +6,6 @@ workflows:
     environment:
       java: 17
     scripts:
-      - name: Restore Android project
-        script: |
-          base64 --decode darbak_project.tgz.b64 > /tmp/darbak_project.tgz
-          tar -xzf /tmp/darbak_project.tgz
       - name: Install Gradle 8.7
         script: |
           curl -L --fail --retry 3 -o /tmp/gradle.zip https://services.gradle.org/distributions/gradle-8.7-bin.zip
