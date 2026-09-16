@@ -52,6 +52,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val diagnosticManager = runtime.diagnostics
     private val offroadTrackManager = runtime.offroad
     private val offlineMapSearchEngine = runtime.mapSearch
+    private val darbakCenterManager = DarbakCenterManager(application)
+
+    val darbakApps: StateFlow<List<DarbakAppItem>> = darbakCenterManager.darbakApps
+    private val _showDarbakCenterDialog = MutableStateFlow(false)
+    val showDarbakCenterDialog: StateFlow<Boolean> = _showDarbakCenterDialog.asStateFlow()
 
     private val _currentScreen = MutableStateFlow(CarScreen.HOME)
     val currentScreen: StateFlow<CarScreen> = _currentScreen.asStateFlow()
@@ -805,7 +810,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         return cropped
     }
 
-    fun loadApps() { _installedApps.value = appRepository.getInstalledApps() }
+    fun loadApps() {
+        _installedApps.value = appRepository.getInstalledApps()
+        refreshDarbakApps()
+    }
+
+    fun openDarbakCenter() { _showDarbakCenterDialog.value = true; refreshDarbakApps() }
+    fun closeDarbakCenter() { _showDarbakCenterDialog.value = false }
+    fun refreshDarbakApps() { darbakCenterManager.refreshApps() }
+    fun launchDarbakApp(packageName: String) {
+        (getApplication<Application>() as? com.example.CarLauncherApp)?.prepareForExternalActivity()
+        darbakCenterManager.launchApp(packageName)
+    }
     fun toggleAppFavorite(packageName: String) { viewModelScope.launch(Dispatchers.IO) { appRepository.toggleFavorite(packageName); loadApps() } }
     fun toggleAppHidden(packageName: String) { viewModelScope.launch(Dispatchers.IO) { appRepository.toggleHidden(packageName); loadApps() } }
     fun launchApp(packageName: String) {
