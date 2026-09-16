@@ -1,1 +1,1 @@
-trigger import Launcher.2026 snapshot
+trigger import Launcher.2026 snapshot retry 2
