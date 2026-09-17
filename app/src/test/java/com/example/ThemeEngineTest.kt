@@ -1,0 +1,41 @@
+package com.example
+
+import com.example.model.DayNightMode
+import com.example.model.GpsTelemetry
+import com.example.ui.viewmodel.MainViewModel
+import com.example.util.SolarCalculator
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Test
+import java.util.Calendar
+import java.util.TimeZone
+
+class ThemeEngineTest {
+
+    @Test
+    fun `forced day and forced night modes evaluate correctly`() {
+        val telemetry = GpsTelemetry()
+        assertFalse(MainViewModel.evaluateNightMode(DayNightMode.FORCED_DAY, telemetry))
+        assertTrue(MainViewModel.evaluateNightMode(DayNightMode.FORCED_NIGHT, telemetry))
+    }
+
+    @Test
+    fun `solar calculator fallback works for zero coordinates`() {
+        val times = SolarCalculator.calculateSolarTimes(0.0, 0.0)
+        assertEquals(360, times.sunriseMinuteOfDay)
+        assertEquals(1080, times.sunsetMinuteOfDay)
+    }
+
+    @Test
+    fun `solar calculator computes reasonable Riyadh sunrise and sunset`() {
+        val cal = Calendar.getInstance(TimeZone.getTimeZone("Asia/Riyadh")).apply {
+            set(2026, Calendar.JUNE, 21, 12, 0)
+        }
+        // Riyadh coordinates: 24.7136° N, 46.6753° E
+        val times = SolarCalculator.calculateSolarTimes(24.7136, 46.6753, cal)
+        // Sunrise around 5:00 AM (300 min), sunset around 6:45 PM (1125 min)
+        assertTrue(times.sunriseMinuteOfDay in 270..360)
+        assertTrue(times.sunsetMinuteOfDay in 1050..1170)
+    }
+}

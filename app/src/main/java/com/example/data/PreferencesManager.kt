@@ -148,6 +148,8 @@ class PreferencesManager(context: Context) {
                         WidgetType.CONTROLS -> WidgetStyle.CONTROLS_CARD
                         WidgetType.MAINTENANCE -> WidgetStyle.MAINTENANCE_VERTICAL
                         WidgetType.DARBAK_CENTER -> WidgetStyle.DARBAK_CENTER_CARD
+                        WidgetType.OFFROAD_INSTRUMENTS -> WidgetStyle.OFFROAD_INSTRUMENTS_CARD
+                        WidgetType.HEAD_UNIT_VITALS -> WidgetStyle.HEAD_UNIT_VITALS_CARD
                     }
                 }
 

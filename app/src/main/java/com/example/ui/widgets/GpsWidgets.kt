@@ -201,8 +201,95 @@ fun GpsWidget(
                 }
             }
 
+            WidgetStyle.OFFROAD_INSTRUMENTS_CARD, WidgetStyle.OFFROAD_INSTRUMENTS_COMPACT -> {
+                OffroadInstrumentsWidget(style, gpsTelemetry)
+            }
+
             else -> {
                 Text(text = gpsTelemetry.statusArabic, style = MaterialTheme.typography.bodyMedium)
+            }
+        }
+    }
+}
+
+@Composable
+fun OffroadInstrumentsWidget(
+    style: WidgetStyle,
+    gpsTelemetry: GpsTelemetry,
+    modifier: Modifier = Modifier
+) {
+    val widgetColors = resolvedWidgetColors()
+    val hasFix = gpsTelemetry.hasGpsFix && gpsTelemetry.latitude != 0.0 && gpsTelemetry.longitude != 0.0
+    val headingStr = if (hasFix) "${gpsTelemetry.bearingDegrees.toInt()}° ${bearingToArabicDirection(gpsTelemetry.bearingDegrees)}" else "غير متاح"
+    val altitudeStr = if (hasFix && gpsTelemetry.altitudeMeters != 0.0) "${gpsTelemetry.altitudeMeters.toInt()} م" else "غير متاح"
+    val accuracyStr = if (hasFix) "±${gpsTelemetry.accuracyMeters.toInt()} م" else "غير متاح"
+    val fixStateStr = if (hasFix) "ثابت 3D" else if (gpsTelemetry.statusArabic.isNotBlank()) gpsTelemetry.statusArabic else "غير متاح"
+
+    Surface(
+        color = resolvedWidgetSurface(CarbonSurface),
+        shape = RoundedCornerShape(14.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, CarbonCardBorder),
+        modifier = modifier.fillMaxSize()
+    ) {
+        if (style == WidgetStyle.OFFROAD_INSTRUMENTS_COMPACT) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(Icons.Default.Explore, null, tint = widgetColors.accent, modifier = Modifier.size(18.dp))
+                    Text(headingStr, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary)
+                }
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Icon(Icons.Default.Terrain, null, tint = widgetColors.accent, modifier = Modifier.size(18.dp))
+                    Text(altitudeStr, style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary)
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(10.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Default.Explore, null, tint = widgetColors.accent, modifier = Modifier.size(18.dp))
+                        Text("أجهزة الطرق الوعرة", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.accent)
+                    }
+                    Text(fixStateStr, style = MaterialTheme.typography.labelSmall, color = if (hasFix) EmeraldSafe else TextMuted)
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("البوصلة والاتجاه", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
+                        Text(headingStr, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("ارتفاع GPS", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
+                        Text(altitudeStr, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("دقة الموقع", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
+                        Text(accuracyStr, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("حالة الإشارة", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
+                        Text(if (hasFix) "ممتازة" else "ضعيفة", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = if (hasFix) EmeraldSafe else AmberRacing, maxLines = 1)
+                    }
+                }
             }
         }
     }

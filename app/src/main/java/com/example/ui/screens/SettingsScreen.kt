@@ -136,6 +136,19 @@ fun SettingsScreen(
                                     fileImportStatus?.let { status -> item { StatusMetric("حالة الاستيراد", status, status.startsWith("تم")) } }
                                     item { NumberSlider("تعتيم الخلفية", settings.wallpaperDimPercent, 0, 80, "%") { viewModel.updateSettings(settings.copy(wallpaperDimPercent = it)) } }
                                     item {
+                                        ChoiceCard("وضع النهار والليل الذكي", "التبديل بين وضع النهار والليل تلقائيًا دون إنترنت") {
+                                            LazyRow(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                                items(DayNightMode.values().toList()) { mode ->
+                                                    FilterChip(
+                                                        selected = settings.dayNightMode == mode,
+                                                        onClick = { viewModel.updateSettings(settings.copy(dayNightMode = mode)) },
+                                                        label = { Text(mode.arabicName, fontSize = 9.sp) }
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                    item {
                                         ChoiceCard("لون الواجهة", "يُطبّق على شريطي الحالة والتنقل وعناصر الإعدادات") {
                                             InterfaceAccent.values().forEach { option ->
                                                 FilterChip(

@@ -76,10 +76,16 @@ class DiagnosticManager(
 
         // 7. Storage / Media Access Check
         val storageHealth = try {
+            val vitalsManager = HeadUnitVitalsManager(context)
+            val vitals = vitalsManager.readVitals()
+            val storageDetails = if (vitals.isStorageAvailable) {
+                "المساحة المتاحة: ${String.format(java.util.Locale.US, "%.1f", vitals.storageAvailableGb)} GB من أصل ${String.format(java.util.Locale.US, "%.1f", vitals.storageTotalGb)} GB (RAM: ${vitals.ramUsedPercent}%)"
+            } else "المساحة المحلية متاحة وقابلة للكتابة"
+
             val filesDir = context.filesDir
             val canWrite = filesDir.canWrite()
             if (canWrite) {
-                ComponentHealth("الذاكرة والملفات", ComponentStatus.RUNNING, "المساحة المحلية متاحة وقابلة للكتابة")
+                ComponentHealth("الذاكرة والملفات", ComponentStatus.RUNNING, storageDetails)
             } else {
                 ComponentHealth("الذاكرة والملفات", ComponentStatus.ERROR, "لا يمكن الكتابة على الذاكرة")
             }

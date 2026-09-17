@@ -132,6 +132,7 @@ fun CarLauncherMainApp(viewModel: MainViewModel) {
     val currentScreen by viewModel.currentScreen.collectAsState()
     val safeArea by viewModel.safeArea.collectAsState()
     val settings by viewModel.settings.collectAsState()
+    val isNightMode by viewModel.isNightMode.collectAsState()
     val widgets by viewModel.widgets.collectAsState()
     val screenSaverLayouts by viewModel.screenSaverLayouts.collectAsState()
     val installedApps by viewModel.installedApps.collectAsState()
@@ -185,7 +186,7 @@ fun CarLauncherMainApp(viewModel: MainViewModel) {
             }
         }
     ) {
-        LauncherBackground(settings, Modifier.fillMaxSize())
+        LauncherBackground(settings, isNightMode, Modifier.fillMaxSize())
 
         val fullCanvas = activeSubOverlay == SubOverlayScreen.NONE && (currentScreen == CarScreen.HOME || currentScreen == CarScreen.MAP)
         if (activeSubOverlay == SubOverlayScreen.SCREEN_SAVER_EDITOR) {

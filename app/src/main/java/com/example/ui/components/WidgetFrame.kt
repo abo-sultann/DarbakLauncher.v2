@@ -75,7 +75,7 @@ fun WidgetFrame(
         WidgetType.TRIP -> RoundedCornerShape(12.dp)
         WidgetType.APPS -> RoundedCornerShape(22.dp)
         WidgetType.CONTROLS -> RoundedCornerShape(20.dp)
-        WidgetType.MAINTENANCE, WidgetType.DARBAK_CENTER -> RoundedCornerShape(18.dp)
+        WidgetType.MAINTENANCE, WidgetType.DARBAK_CENTER, WidgetType.OFFROAD_INSTRUMENTS, WidgetType.HEAD_UNIT_VITALS -> RoundedCornerShape(18.dp)
     }
     val normalBackground = when (widgetItem.surfaceStyle) {
         WidgetSurfaceStyle.TRANSPARENT -> Color.Transparent

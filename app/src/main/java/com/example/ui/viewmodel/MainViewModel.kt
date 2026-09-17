@@ -18,6 +18,7 @@ import com.example.core.startup.LauncherStartupCoordinator
 import com.example.core.startup.StartupStage
 import com.example.data.*
 import com.example.model.*
+import com.example.util.SolarCalculator
 import com.example.ui.components.CarScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -53,6 +54,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val offroadTrackManager = runtime.offroad
     private val offlineMapSearchEngine = runtime.mapSearch
     private val darbakCenterManager = DarbakCenterManager(application)
+    private val headUnitVitalsManager = HeadUnitVitalsManager(application)
+    private val _headUnitVitals = MutableStateFlow(headUnitVitalsManager.readVitals())
+    val headUnitVitals: StateFlow<HeadUnitVitals> = _headUnitVitals.asStateFlow()
 
     val darbakApps: StateFlow<List<DarbakAppItem>> = darbakCenterManager.darbakApps
     private val _showDarbakCenterDialog = MutableStateFlow(false)
@@ -72,6 +76,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         }
     )
     val settings: StateFlow<LauncherSettings> = _settings.asStateFlow()
+    private val _isNightMode = MutableStateFlow(false)
+    val isNightMode: StateFlow<Boolean> = _isNightMode.asStateFlow()
     private val _widgets = MutableStateFlow<List<WidgetItem>>(emptyList())
     val widgets: StateFlow<List<WidgetItem>> = _widgets.asStateFlow()
     private val _screenSaverLayouts = MutableStateFlow<List<ScreenSaverWidgetLayout>>(emptyList())
@@ -142,8 +148,25 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (telemetry.hasGpsFix && telemetry.accuracyMeters <= 45f && telemetry.fixAgeMs <= 8_000L) {
                     offroadTrackManager.record(telemetry)
                 }
+                updateNightMode()
             }
         }
+        viewModelScope.launch {
+            _settings.collect {
+                updateNightMode()
+                gpsTelemetryManager.updateAltitudeCalibrationOffset(it.altitudeCalibrationOffsetMeters)
+            }
+        }
+        viewModelScope.launch(Dispatchers.IO) {
+            while (true) {
+                _headUnitVitals.value = headUnitVitalsManager.readVitals()
+                delay(4000L)
+            }
+        }
+    }
+
+    private fun updateNightMode() {
+        _isNightMode.value = evaluateNightMode(_settings.value.dayNightMode, gpsTelemetry.value)
     }
 
     private fun checkSafeMode() {
@@ -445,7 +468,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         preferencesManager.saveSafeArea(config)
     }
     fun resetSafeArea() { updateSafeArea(0, 0, 0, 0) }
-    fun updateSettings(newSettings: LauncherSettings) { _settings.value = newSettings; preferencesManager.saveSettings(newSettings) }
+    fun updateSettings(newSettings: LauncherSettings) {
+        _settings.value = newSettings
+        preferencesManager.saveSettings(newSettings)
+        updateNightMode()
+    }
 
     fun toggleScreenSaverWidget(type: WidgetType) {
         if (type !in SCREEN_SAVER_DISPLAY_WIDGET_TYPES) return
@@ -1067,6 +1094,22 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     companion object {
+        fun evaluateNightMode(mode: DayNightMode, telemetry: GpsTelemetry): Boolean {
+            return when (mode) {
+                DayNightMode.FORCED_DAY -> false
+                DayNightMode.FORCED_NIGHT -> true
+                DayNightMode.AUTO_CLOCK -> {
+                    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                    hour < 6 || hour >= 18
+                }
+                DayNightMode.AUTO_SUNRISE_SUNSET -> {
+                    val cal = java.util.Calendar.getInstance()
+                    val currentMinute = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
+                    val solar = SolarCalculator.calculateSolarTimes(telemetry.latitude, telemetry.longitude, cal)
+                    currentMinute < solar.sunriseMinuteOfDay || currentMinute >= solar.sunsetMinuteOfDay
+                }
+            }
+        }
         private const val SNAP_TOLERANCE = 0.014f
         private const val HOME_LAYOUTS_KEY = "saved_home_layouts_json"
         private const val SAVER_LAYOUTS_KEY = "saved_saver_layouts_json"

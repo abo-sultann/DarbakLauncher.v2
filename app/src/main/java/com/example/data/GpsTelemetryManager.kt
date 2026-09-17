@@ -27,9 +27,15 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
     private var isListening = false
     private var previousAcceptedGps: Location? = null
     private val recentSpeeds = ArrayDeque<Float>()
+    private val recentAltitudes = ArrayDeque<Double>()
+    private var altitudeCalibrationOffset = 0f
     private var movingConfirmations = 0
     private var stationaryConfirmations = 0
     private val maintenanceMileageBridge = MaintenanceMileageBridge(context)
+
+    fun updateAltitudeCalibrationOffset(offsetMeters: Float) {
+        altitudeCalibrationOffset = offsetMeters
+    }
 
     fun hasLocationPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -178,10 +184,17 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
             }
 
             previousAcceptedGps = Location(location)
+
+            val rawAlt = if (location.hasAltitude()) location.altitude else 0.0
+            val smoothedAlt = if (location.hasAltitude()) {
+                pushAltitude(rawAlt)
+                medianAltitude() + altitudeCalibrationOffset
+            } else 0.0
+
             _telemetry.value = GpsTelemetry(
                 latitude = location.latitude,
                 longitude = location.longitude,
-                altitudeMeters = if (location.hasAltitude()) location.altitude else 0.0,
+                altitudeMeters = smoothedAlt,
                 speedKmH = confirmedSpeed,
                 bearingDegrees = if (location.hasBearing() && confirmedSpeed >= 2f) location.bearing else _telemetry.value.bearingDegrees,
                 accuracyMeters = accuracy,
@@ -191,7 +204,13 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
                 isSpeedReliable = movingConfirmations >= 2 || stationaryConfirmations >= 2,
                 fixAgeMs = ageMs,
                 providerName = provider,
-                rejectedReason = ""
+                rejectedReason = "",
+                rawLatitude = location.latitude,
+                rawLongitude = location.longitude,
+                rawAltitude = rawAlt,
+                rawSpeedKmH = rawSpeed,
+                rawAccuracyMeters = accuracy,
+                rawBearingDegrees = if (location.hasBearing()) location.bearing else 0f
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error processing location update", e)
@@ -227,6 +246,17 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
     private fun medianSpeed(): Float {
         if (recentSpeeds.isEmpty()) return 0f
         val sorted = recentSpeeds.toList().sorted()
+        return sorted[sorted.size / 2]
+    }
+
+    private fun pushAltitude(value: Double) {
+        recentAltitudes.addLast(value)
+        while (recentAltitudes.size > 5) recentAltitudes.removeFirst()
+    }
+
+    private fun medianAltitude(): Double {
+        if (recentAltitudes.isEmpty()) return 0.0
+        val sorted = recentAltitudes.toList().sorted()
         return sorted[sorted.size / 2]
     }
 

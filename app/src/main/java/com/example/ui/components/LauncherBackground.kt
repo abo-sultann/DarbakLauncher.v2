@@ -23,6 +23,7 @@ import java.io.File
 @Composable
 fun LauncherBackground(
     settings: LauncherSettings,
+    isNightMode: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     Box(modifier.fillMaxSize().background(backgroundBrush(settings.backgroundType))) {
@@ -54,6 +55,9 @@ fun LauncherBackground(
             )
             val dim = settings.wallpaperDimPercent.coerceIn(0, 80) / 100f
             if (dim > 0f) Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = dim)))
+        }
+        if (isNightMode) {
+            Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
         }
     }
 }

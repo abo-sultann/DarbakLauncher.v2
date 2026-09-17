@@ -38,6 +38,7 @@ fun HomeScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
     val activeMap by viewModel.activeMap.collectAsState()
     val navigationTarget by viewModel.offroadNavigationTarget.collectAsState()
     val showDarbakCenterDialog by viewModel.showDarbakCenterDialog.collectAsState()
+    val headUnitVitals by viewModel.headUnitVitals.collectAsState()
 
     val visualWidgets = widgets
 
@@ -148,7 +149,8 @@ fun HomeScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                         activeMap,
                         navigationTarget,
                         if (navigationTarget != null) viewModel.offroadDistanceToTargetMeters() else null,
-                        if (navigationTarget != null) viewModel.offroadBearingToTarget() else null
+                        if (navigationTarget != null) viewModel.offroadBearingToTarget() else null,
+                        headUnitVitals
                     )
                 }
             }
@@ -294,6 +296,8 @@ private fun backgroundFocusGeometry(type: WidgetType): FloatArray = when (type) 
     WidgetType.CONTROLS -> floatArrayOf(.72f, .75f, .25f, .17f)
     WidgetType.MAINTENANCE -> floatArrayOf(.835f, .025f, .15f, .92f)
     WidgetType.DARBAK_CENTER -> floatArrayOf(.38f, .38f, .24f, .18f)
+    WidgetType.OFFROAD_INSTRUMENTS -> floatArrayOf(.025f, .70f, .26f, .22f)
+    WidgetType.HEAD_UNIT_VITALS -> floatArrayOf(.70f, .70f, .26f, .22f)
 }
 
 private fun backgroundFocusStyle(type: WidgetType): WidgetStyle = when (type) {
@@ -308,6 +312,8 @@ private fun backgroundFocusStyle(type: WidgetType): WidgetStyle = when (type) {
     WidgetType.CONTROLS -> WidgetStyle.CONTROLS_HORIZONTAL_BAR
     WidgetType.MAINTENANCE -> WidgetStyle.MAINTENANCE_VERTICAL
     WidgetType.DARBAK_CENTER -> WidgetStyle.DARBAK_CENTER_CARD
+    WidgetType.OFFROAD_INSTRUMENTS -> WidgetStyle.OFFROAD_INSTRUMENTS_CARD
+    WidgetType.HEAD_UNIT_VITALS -> WidgetStyle.HEAD_UNIT_VITALS_CARD
 }
 
 @Composable
@@ -323,7 +329,8 @@ private fun RenderWidgetContent(
     map: MapItem?,
     navigationTarget: OffroadNavigationTarget?,
     targetDistanceMeters: Float?,
-    targetBearing: Float?
+    targetBearing: Float?,
+    headUnitVitals: com.example.data.HeadUnitVitals
 ) {
     when (w.type) {
         WidgetType.CLOCK -> ClockWidget(w.style, s.is24HourFormat)
@@ -337,5 +344,7 @@ private fun RenderWidgetContent(
         WidgetType.CONTROLS -> ControlsWidget(w.style, p, { vm.adjustVolume(it) }, { vm.toggleMute() }, { vm.togglePlayPause() }, { vm.playNext() }, { vm.playPrevious() })
         WidgetType.MAINTENANCE -> MaintenanceWidget(w.style, interactionEnabled = !isDesignMode)
         WidgetType.DARBAK_CENTER -> DarbakCenterWidget(w.style, vm, interactionEnabled = !isDesignMode, onOpenCenter = { vm.openDarbakCenter() })
+        WidgetType.OFFROAD_INSTRUMENTS -> OffroadInstrumentsWidget(w.style, gps)
+        WidgetType.HEAD_UNIT_VITALS -> HeadUnitVitalsWidget(w.style, headUnitVitals)
     }
 }
