@@ -1125,11 +1125,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                         Pair(telemetry.latitude, telemetry.longitude)
                     } else preferencesManager?.getLastValidLocation()
 
-                    if (validLocation != null) {
-                        val solar = SolarCalculator.calculateSolarTimes(validLocation.first, validLocation.second, cal)
+                    val solar = validLocation?.let { SolarCalculator.calculateSolarTimes(it.first, it.second, cal) }
+
+                    if (solar != null) {
                         currentMinute < solar.sunriseMinuteOfDay || currentMinute >= solar.sunsetMinuteOfDay
                     } else {
-                        // Explicit clock time fallback when no valid GPS location has ever been saved
+                        // Explicit fallback to AUTO_CLOCK behavior when solar calculation is unavailable
                         hour < 6 || hour >= 18
                     }
                 }

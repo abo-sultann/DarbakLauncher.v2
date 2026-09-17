@@ -68,7 +68,7 @@ class GpsTelemetryManager(private val context: Context) : LocationListener, andr
             isListening = true
 
             try {
-                val sensor = sensorManager?.getDefaultSensor(android.hardware.Sensor.TYPE_ORIENTATION)
+                val sensor = sensorManager?.getDefaultSensor(android.hardware.Sensor.TYPE_ROTATION_VECTOR)
                 if (sensor != null) {
                     sensorManager?.registerListener(this, sensor, android.hardware.SensorManager.SENSOR_DELAY_UI)
                 }
@@ -104,10 +104,25 @@ class GpsTelemetryManager(private val context: Context) : LocationListener, andr
     }
 
     override fun onSensorChanged(event: android.hardware.SensorEvent) {
-        if (event.sensor.type == android.hardware.Sensor.TYPE_ORIENTATION) {
-            val heading = ((event.values[0] % 360f) + 360f) % 360f
-            currentSensorHeading = heading
-            _telemetry.value = _telemetry.value.copy(sensorHeadingDegrees = heading)
+        if (event.sensor.type == android.hardware.Sensor.TYPE_ROTATION_VECTOR) {
+            if (event.accuracy == android.hardware.SensorManager.SENSOR_STATUS_UNRELIABLE) {
+                currentSensorHeading = null
+                _telemetry.value = _telemetry.value.copy(sensorHeadingDegrees = null)
+                return
+            }
+            try {
+                val rotationMatrix = FloatArray(9)
+                android.hardware.SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                val orientation = FloatArray(3)
+                android.hardware.SensorManager.getOrientation(rotationMatrix, orientation)
+                val azimuthRad = orientation[0]
+                val azimuthDeg = ((Math.toDegrees(azimuthRad.toDouble()).toFloat() % 360f) + 360f) % 360f
+                currentSensorHeading = azimuthDeg
+                _telemetry.value = _telemetry.value.copy(sensorHeadingDegrees = azimuthDeg)
+            } catch (_: Exception) {
+                currentSensorHeading = null
+                _telemetry.value = _telemetry.value.copy(sensorHeadingDegrees = null)
+            }
         }
     }
 

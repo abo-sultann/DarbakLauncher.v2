@@ -10,19 +10,17 @@ object SolarCalculator {
         val sunsetMinuteOfDay: Int   // e.g. 1080 = 06:00 PM
     )
 
-    /** Default fallback times: 06:00 AM sunrise and 06:00 PM sunset. */
-    val DEFAULT_SOLAR_TIMES = SolarTimes(sunriseMinuteOfDay = 360, sunsetMinuteOfDay = 1080)
-
     /**
      * Calculates local sunrise and sunset times (in minutes from midnight) for a given location and date.
      * Uses standard zenith angle 90.833° (official sunrise/sunset).
+     * Returns null if coordinates are (0,0) or if calculation is unavailable.
      */
     fun calculateSolarTimes(
         latitude: Double,
         longitude: Double,
         calendar: Calendar = Calendar.getInstance()
-    ): SolarTimes {
-        if (latitude == 0.0 && longitude == 0.0) return DEFAULT_SOLAR_TIMES
+    ): SolarTimes? {
+        if (latitude == 0.0 && longitude == 0.0) return null
 
         try {
             val year = calendar.get(Calendar.YEAR)
@@ -33,14 +31,14 @@ object SolarCalculator {
             val sunrise = computeSolarTime(year, month, day, latitude, longitude, tzOffsetHours, isSunrise = true)
             val sunset = computeSolarTime(year, month, day, latitude, longitude, tzOffsetHours, isSunrise = false)
 
-            if (sunrise == null || sunset == null) return DEFAULT_SOLAR_TIMES
+            if (sunrise == null || sunset == null) return null
 
             return SolarTimes(
                 sunriseMinuteOfDay = sunrise.coerceIn(0, 1439),
                 sunsetMinuteOfDay = sunset.coerceIn(0, 1439)
             )
         } catch (_: Exception) {
-            return DEFAULT_SOLAR_TIMES
+            return null
         }
     }
 
