@@ -59,5 +59,12 @@ data class GpsTelemetry(
     val isSpeedReliable: Boolean = false,
     val fixAgeMs: Long = Long.MAX_VALUE,
     val providerName: String = "",
-    val rejectedReason: String = ""
+    val rejectedReason: String = "",
+    val rawLatitude: Double = latitude,
+    val rawLongitude: Double = longitude,
+    val rawAltitude: Double = altitudeMeters,
+    val rawSpeedKmH: Float = speedKmH,
+    val rawAccuracyMeters: Float = accuracyMeters,
+    val rawBearingDegrees: Float = bearingDegrees,
+    val sensorHeadingDegrees: Float? = null
 )

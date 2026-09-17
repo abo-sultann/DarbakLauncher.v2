@@ -34,8 +34,10 @@ class MusicPlayerService(
     private val _playbackState = MutableStateFlow(MusicPlaybackState())
     val playbackState: StateFlow<MusicPlaybackState> = _playbackState.asStateFlow()
 
+    private val externalMediaManager = ExternalMediaSessionManager(context)
     private var progressJob: Job? = null
     private var scanJob: Job? = null
+    private var externalMediaJob: Job? = null
     private var lastResumePersistAtElapsed = 0L
 
     private val audioFocusListener = AudioManager.OnAudioFocusChangeListener { change ->
@@ -62,6 +64,33 @@ class MusicPlayerService(
 
     init {
         updateMediaSessionState()
+        startExternalMediaPolling()
+    }
+
+    private fun startExternalMediaPolling() {
+        externalMediaJob?.cancel()
+        externalMediaJob = serviceScope.launch(Dispatchers.IO) {
+            while (isActive) {
+                try {
+                    val ext = externalMediaManager.checkActiveSessions()
+                    if (ext.hasActiveExternalSession) {
+                        _playbackState.value = _playbackState.value.copy(
+                            isExternalSession = true,
+                            externalTitle = ext.title,
+                            externalArtist = ext.artist,
+                            isPlaying = ext.isPlaying
+                        )
+                    } else if (_playbackState.value.isExternalSession) {
+                        _playbackState.value = _playbackState.value.copy(
+                            isExternalSession = false,
+                            externalTitle = "",
+                            externalArtist = ""
+                        )
+                    }
+                } catch (_: Exception) { }
+                delay(3000L)
+            }
+        }
     }
 
     fun initialize() {
@@ -232,6 +261,16 @@ class MusicPlayerService(
     }
 
     fun togglePlayPause() {
+        val ext = externalMediaManager.checkActiveSessions()
+        if (ext.hasActiveExternalSession && externalMediaManager.playPause()) {
+            _playbackState.value = _playbackState.value.copy(
+                isExternalSession = true,
+                externalTitle = ext.title,
+                externalArtist = ext.artist,
+                isPlaying = !ext.isPlaying
+            )
+            return
+        }
         val current = _playbackState.value
         if (current.currentTrack == null) {
             val first = current.playlist.firstOrNull()
@@ -278,6 +317,10 @@ class MusicPlayerService(
     }
 
     fun playNext() {
+        val ext = externalMediaManager.checkActiveSessions()
+        if (ext.hasActiveExternalSession && externalMediaManager.next()) {
+            return
+        }
         val playlist = _playbackState.value.playlist
         if (playlist.isEmpty()) return
         val currentIndex = playlist.indexOfFirst { it.dataPath == _playbackState.value.currentTrack?.dataPath }
@@ -286,6 +329,10 @@ class MusicPlayerService(
     }
 
     fun playPrevious() {
+        val ext = externalMediaManager.checkActiveSessions()
+        if (ext.hasActiveExternalSession && externalMediaManager.previous()) {
+            return
+        }
         val playlist = _playbackState.value.playlist
         if (playlist.isEmpty()) return
         val currentIndex = playlist.indexOfFirst { it.dataPath == _playbackState.value.currentTrack?.dataPath }
@@ -416,6 +463,7 @@ class MusicPlayerService(
     fun release() {
         val current = _playbackState.value
         saveResumeState(current.currentTrack?.dataPath, mediaPlayer?.currentPosition?.toLong() ?: current.currentPositionMs)
+        externalMediaJob?.cancel()
         scanJob?.cancel()
         stopCurrentPlayer()
         try { audioManager?.abandonAudioFocus(audioFocusListener) } catch (_: Exception) { }

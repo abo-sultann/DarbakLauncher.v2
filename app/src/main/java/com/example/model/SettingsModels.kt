@@ -16,6 +16,13 @@ enum class DockSurfaceStyle(val arabicName: String) {
     SOLID("داكن")
 }
 
+enum class DayNightMode(val arabicName: String) {
+    FORCED_DAY("نهار دائم"),
+    FORCED_NIGHT("ليل دائم"),
+    AUTO_CLOCK("تلقائي حسب الساعة"),
+    AUTO_SUNRISE_SUNSET("تلقائي حسب الشروق والغروب offline GPS")
+}
+
 /** Small, offline-safe accent palette that remains readable on the car display. */
 enum class InterfaceAccent(val arabicName: String, val argb: Int) {
     CYAN("سماوي", 0xFF00E5FF.toInt()),
@@ -63,6 +70,7 @@ data class ScreenSaverWidgetLayout(
 
 data class LauncherSettings(
     val safeArea: SafeAreaConfig = SafeAreaConfig.DEFAULT,
+    val dayNightMode: DayNightMode = DayNightMode.AUTO_CLOCK,
     val backgroundType: BackgroundType = BackgroundType.DARK_CARBON,
     val customWallpaperPath: String? = null,
     val wallpaperDimPercent: Int = 10,
@@ -87,6 +95,7 @@ data class LauncherSettings(
     val highContrastMode: Boolean = false,
     val keepScreenOn: Boolean = true,
     val autoLogTrips: Boolean = true,
+    val altitudeCalibrationOffsetMeters: Float = 0f,
     val childUnlockHoldSeconds: Int = 3,
     val screenSaverEnabled: Boolean = false,
     val screenSaverTimeoutSeconds: Int = 120,

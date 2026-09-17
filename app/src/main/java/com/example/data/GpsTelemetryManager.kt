@@ -18,18 +18,26 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.ArrayDeque
 import kotlin.math.max
 
-class GpsTelemetryManager(private val context: Context) : LocationListener {
+class GpsTelemetryManager(private val context: Context) : LocationListener, android.hardware.SensorEventListener {
 
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? android.hardware.SensorManager
+    private var currentSensorHeading: Float? = null
     private val _telemetry = MutableStateFlow(GpsTelemetry())
     val telemetry: StateFlow<GpsTelemetry> = _telemetry.asStateFlow()
 
     private var isListening = false
     private var previousAcceptedGps: Location? = null
     private val recentSpeeds = ArrayDeque<Float>()
+    private val recentAltitudes = ArrayDeque<Double>()
+    private var altitudeCalibrationOffset = 0f
     private var movingConfirmations = 0
     private var stationaryConfirmations = 0
     private val maintenanceMileageBridge = MaintenanceMileageBridge(context)
+
+    fun updateAltitudeCalibrationOffset(offsetMeters: Float) {
+        altitudeCalibrationOffset = offsetMeters
+    }
 
     fun hasLocationPermission(): Boolean =
         ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED ||
@@ -59,6 +67,13 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
             if (isNetworkEnabled) lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 4000L, 10f, this)
             isListening = true
 
+            try {
+                val sensor = sensorManager?.getDefaultSensor(android.hardware.Sensor.TYPE_ROTATION_VECTOR)
+                if (sensor != null) {
+                    sensorManager?.registerListener(this, sensor, android.hardware.SensorManager.SENSOR_DELAY_UI)
+                }
+            } catch (_: Exception) { }
+
             val lastGps = if (isGpsEnabled) lm.getLastKnownLocation(LocationManager.GPS_PROVIDER) else null
             if (lastGps != null && locationAgeMs(lastGps) <= LAST_KNOWN_MAX_AGE_MS && accuracyOf(lastGps) <= 60f) {
                 processLocation(lastGps, fromLastKnown = true)
@@ -79,9 +94,39 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
     fun restartGpsUpdates() { stopGpsUpdates(); startGpsUpdates() }
 
     fun stopGpsUpdates() {
-        try { if (isListening) locationManager?.removeUpdates(this) } catch (e: Exception) { Log.e(TAG, "Error stopping GPS updates", e) }
+        try {
+            if (isListening) {
+                locationManager?.removeUpdates(this)
+                sensorManager?.unregisterListener(this)
+            }
+        } catch (e: Exception) { Log.e(TAG, "Error stopping GPS updates", e) }
         finally { isListening = false }
     }
+
+    override fun onSensorChanged(event: android.hardware.SensorEvent) {
+        if (event.sensor.type == android.hardware.Sensor.TYPE_ROTATION_VECTOR) {
+            if (event.accuracy == android.hardware.SensorManager.SENSOR_STATUS_UNRELIABLE) {
+                currentSensorHeading = null
+                _telemetry.value = _telemetry.value.copy(sensorHeadingDegrees = null)
+                return
+            }
+            try {
+                val rotationMatrix = FloatArray(9)
+                android.hardware.SensorManager.getRotationMatrixFromVector(rotationMatrix, event.values)
+                val orientation = FloatArray(3)
+                android.hardware.SensorManager.getOrientation(rotationMatrix, orientation)
+                val azimuthRad = orientation[0]
+                val azimuthDeg = ((Math.toDegrees(azimuthRad.toDouble()).toFloat() % 360f) + 360f) % 360f
+                currentSensorHeading = azimuthDeg
+                _telemetry.value = _telemetry.value.copy(sensorHeadingDegrees = azimuthDeg)
+            } catch (_: Exception) {
+                currentSensorHeading = null
+                _telemetry.value = _telemetry.value.copy(sensorHeadingDegrees = null)
+            }
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: android.hardware.Sensor?, accuracy: Int) {}
 
     override fun onLocationChanged(location: Location) = processLocation(location, fromLastKnown = false)
 
@@ -178,10 +223,17 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
             }
 
             previousAcceptedGps = Location(location)
+
+            val rawAlt = if (location.hasAltitude()) location.altitude else 0.0
+            val smoothedAlt = if (location.hasAltitude()) {
+                pushAltitude(rawAlt)
+                medianAltitude() + altitudeCalibrationOffset
+            } else 0.0
+
             _telemetry.value = GpsTelemetry(
                 latitude = location.latitude,
                 longitude = location.longitude,
-                altitudeMeters = if (location.hasAltitude()) location.altitude else 0.0,
+                altitudeMeters = smoothedAlt,
                 speedKmH = confirmedSpeed,
                 bearingDegrees = if (location.hasBearing() && confirmedSpeed >= 2f) location.bearing else _telemetry.value.bearingDegrees,
                 accuracyMeters = accuracy,
@@ -191,7 +243,14 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
                 isSpeedReliable = movingConfirmations >= 2 || stationaryConfirmations >= 2,
                 fixAgeMs = ageMs,
                 providerName = provider,
-                rejectedReason = ""
+                rejectedReason = "",
+                rawLatitude = location.latitude,
+                rawLongitude = location.longitude,
+                rawAltitude = rawAlt,
+                rawSpeedKmH = rawSpeed,
+                rawAccuracyMeters = accuracy,
+                rawBearingDegrees = if (location.hasBearing()) location.bearing else 0f,
+                sensorHeadingDegrees = currentSensorHeading
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error processing location update", e)
@@ -227,6 +286,17 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
     private fun medianSpeed(): Float {
         if (recentSpeeds.isEmpty()) return 0f
         val sorted = recentSpeeds.toList().sorted()
+        return sorted[sorted.size / 2]
+    }
+
+    private fun pushAltitude(value: Double) {
+        recentAltitudes.addLast(value)
+        while (recentAltitudes.size > 5) recentAltitudes.removeFirst()
+    }
+
+    private fun medianAltitude(): Double {
+        if (recentAltitudes.isEmpty()) return 0.0
+        val sorted = recentAltitudes.toList().sorted()
         return sorted[sorted.size / 2]
     }
 

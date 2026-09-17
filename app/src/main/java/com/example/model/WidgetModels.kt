@@ -11,7 +11,9 @@ enum class WidgetType(val arabicTitle: String, val iconRes: String) {
     APPS("التطبيقات والمفضلة", "apps"),
     CONTROLS("التحكم السريع", "tune"),
     MAINTENANCE("الصيانة", "build"),
-    DARBAK_CENTER("مركز دربك", "hub")
+    DARBAK_CENTER("مركز دربك", "hub"),
+    OFFROAD_INSTRUMENTS("أجهزة الطرق الوعرة", "explore"),
+    HEAD_UNIT_VITALS("حالة الجهاز", "memory")
 }
 
 enum class WidgetSurfaceStyle(val arabicName: String) {
@@ -112,7 +114,15 @@ enum class WidgetStyle(val type: WidgetType, val arabicName: String, val descrip
 
     DARBAK_CENTER_CARD(WidgetType.DARBAK_CENTER, "بطاقة مركز دربك", "بطاقة بصرية تعرض حالة تطبيقات دربك وتفتح المركز"),
     DARBAK_CENTER_COMPACT(WidgetType.DARBAK_CENTER, "مركز دربك المدمج", "عرض مدمج لحالة تطبيقات دربك"),
-    DARBAK_CENTER_WIDE(WidgetType.DARBAK_CENTER, "مركز دربك العريض", "عرض عريض لحالة وسلسلة تطبيقات دربك")
+    DARBAK_CENTER_WIDE(WidgetType.DARBAK_CENTER, "مركز دربك العريض", "عرض عريض لحالة وسلسلة تطبيقات دربك"),
+
+    OFFROAD_INSTRUMENTS_CARD(WidgetType.OFFROAD_INSTRUMENTS, "بوصلة وارتفاع كاملة", "عرض البوصلة والارتفاع والدقة وحالة GPS"),
+    OFFROAD_INSTRUMENTS_COMPACT(WidgetType.OFFROAD_INSTRUMENTS, "بوصلة وارتفاع مدمجة", "بوصلة رقمية والارتفاع فقط"),
+    OFFROAD_INSTRUMENTS_FULL(WidgetType.OFFROAD_INSTRUMENTS, "لوحة الطرق الوعرة", "شاشة أجهزة برية كاملة"),
+
+    HEAD_UNIT_VITALS_CARD(WidgetType.HEAD_UNIT_VITALS, "حالة الجهاز الكاملة", "الذاكرة والتخزين والمعالج والحرارة"),
+    HEAD_UNIT_VITALS_COMPACT(WidgetType.HEAD_UNIT_VITALS, "حالة الجهاز المدمجة", "الذاكرة والتخزين فقط"),
+    HEAD_UNIT_VITALS_MINI(WidgetType.HEAD_UNIT_VITALS, "مؤشر الذاكرة المصغر", "نسبة استهلاك RAM فقط")
 }
 
 /**
@@ -175,6 +185,16 @@ fun preferredWidgetStylesFor(type: WidgetType): List<WidgetStyle> = when (type) 
         WidgetStyle.DARBAK_CENTER_COMPACT,
         WidgetStyle.DARBAK_CENTER_WIDE
     )
+    WidgetType.OFFROAD_INSTRUMENTS -> listOf(
+        WidgetStyle.OFFROAD_INSTRUMENTS_CARD,
+        WidgetStyle.OFFROAD_INSTRUMENTS_COMPACT,
+        WidgetStyle.OFFROAD_INSTRUMENTS_FULL
+    )
+    WidgetType.HEAD_UNIT_VITALS -> listOf(
+        WidgetStyle.HEAD_UNIT_VITALS_CARD,
+        WidgetStyle.HEAD_UNIT_VITALS_COMPACT,
+        WidgetStyle.HEAD_UNIT_VITALS_MINI
+    )
 }
 
 /** Maps every 1.x near-duplicate to the closest rebuilt construction. */
@@ -228,6 +248,8 @@ fun modernWidgetStyle(style: WidgetStyle): WidgetStyle {
         }
         WidgetType.MAINTENANCE -> WidgetStyle.MAINTENANCE_VERTICAL
         WidgetType.DARBAK_CENTER -> WidgetStyle.DARBAK_CENTER_CARD
+        WidgetType.OFFROAD_INSTRUMENTS -> WidgetStyle.OFFROAD_INSTRUMENTS_CARD
+        WidgetType.HEAD_UNIT_VITALS -> WidgetStyle.HEAD_UNIT_VITALS_CARD
     }
 }
 
@@ -257,7 +279,7 @@ data class WidgetItem(
     companion object {
         fun defaultSurfaceFor(type: WidgetType): WidgetSurfaceStyle = when (type) {
             WidgetType.CLOCK, WidgetType.SPEEDOMETER, WidgetType.DATE, WidgetType.GPS -> WidgetSurfaceStyle.TRANSPARENT
-            WidgetType.MUSIC, WidgetType.MAP, WidgetType.TRIP, WidgetType.APPS, WidgetType.CONTROLS, WidgetType.MAINTENANCE, WidgetType.DARBAK_CENTER -> WidgetSurfaceStyle.GLASS
+            WidgetType.MUSIC, WidgetType.MAP, WidgetType.TRIP, WidgetType.APPS, WidgetType.CONTROLS, WidgetType.MAINTENANCE, WidgetType.DARBAK_CENTER, WidgetType.OFFROAD_INSTRUMENTS, WidgetType.HEAD_UNIT_VITALS -> WidgetSurfaceStyle.GLASS
         }
 
         fun recommendedSize(type: WidgetType, preset: WidgetSizePreset): Pair<Float, Float> {
@@ -276,6 +298,15 @@ data class WidgetItem(
                     WidgetSizePreset.SMALL -> .22f to .16f
                     WidgetSizePreset.MEDIUM -> .32f to .22f
                     WidgetSizePreset.LARGE -> .40f to .30f
+                    WidgetSizePreset.WIDE -> .48f to .20f
+                }
+            }
+            if (type == WidgetType.OFFROAD_INSTRUMENTS || type == WidgetType.HEAD_UNIT_VITALS) {
+                return when (preset) {
+                    WidgetSizePreset.CONTENT -> .24f to .20f
+                    WidgetSizePreset.SMALL -> .22f to .18f
+                    WidgetSizePreset.MEDIUM -> .30f to .26f
+                    WidgetSizePreset.LARGE -> .40f to .32f
                     WidgetSizePreset.WIDE -> .48f to .20f
                 }
             }

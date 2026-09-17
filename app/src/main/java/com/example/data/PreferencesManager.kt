@@ -14,6 +14,20 @@ class PreferencesManager(context: Context) {
         LauncherDataMigrator(prefs).migrateIfNeeded()
     }
 
+    fun getLastValidLocation(): Pair<Double, Double>? {
+        val lat = java.lang.Double.longBitsToDouble(prefs.getLong("last_valid_lat", 0L))
+        val lon = java.lang.Double.longBitsToDouble(prefs.getLong("last_valid_lon", 0L))
+        return if (lat != 0.0 && lon != 0.0) Pair(lat, lon) else null
+    }
+
+    fun saveLastValidLocation(lat: Double, lon: Double) {
+        if (lat == 0.0 || lon == 0.0) return
+        prefs.edit()
+            .putLong("last_valid_lat", java.lang.Double.doubleToRawLongBits(lat))
+            .putLong("last_valid_lon", java.lang.Double.doubleToRawLongBits(lon))
+            .apply()
+    }
+
     fun getSafeArea(): SafeAreaConfig = try {
         SafeAreaConfig(
             topDp = prefs.getInt("safe_top", 0),
@@ -148,6 +162,8 @@ class PreferencesManager(context: Context) {
                         WidgetType.CONTROLS -> WidgetStyle.CONTROLS_CARD
                         WidgetType.MAINTENANCE -> WidgetStyle.MAINTENANCE_VERTICAL
                         WidgetType.DARBAK_CENTER -> WidgetStyle.DARBAK_CENTER_CARD
+                        WidgetType.OFFROAD_INSTRUMENTS -> WidgetStyle.OFFROAD_INSTRUMENTS_CARD
+                        WidgetType.HEAD_UNIT_VITALS -> WidgetStyle.HEAD_UNIT_VITALS_CARD
                     }
                 }
 

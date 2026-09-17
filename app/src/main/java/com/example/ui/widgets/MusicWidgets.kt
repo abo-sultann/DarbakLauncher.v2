@@ -40,8 +40,8 @@ fun MusicWidget(
 ) {
     val widgetColors = resolvedWidgetColors()
     val track = playbackState.currentTrack
-    val title = track?.title ?: "لا توجد موسيقى مشغلة"
-    val artist = track?.artist ?: "أضف ملفًا صوتيًا من الإعدادات"
+    val title = if (playbackState.isExternalSession && playbackState.externalTitle.isNotBlank()) playbackState.externalTitle else (track?.title ?: "لا توجد موسيقى مشغلة")
+    val artist = if (playbackState.isExternalSession && playbackState.externalArtist.isNotBlank()) playbackState.externalArtist else (track?.artist ?: "أضف ملفًا صوتيًا من الإعدادات")
     val isPlaying = playbackState.isPlaying
 
     val progressFraction = if (playbackState.durationMs > 0) {

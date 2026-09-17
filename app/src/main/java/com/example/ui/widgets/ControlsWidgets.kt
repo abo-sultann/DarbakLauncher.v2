@@ -226,6 +226,97 @@ private fun CircleControlButton(
 }
 
 @Composable
+fun HeadUnitVitalsWidget(
+    style: WidgetStyle,
+    vitals: com.example.data.HeadUnitVitals,
+    modifier: Modifier = Modifier
+) {
+    val widgetColors = resolvedWidgetColors()
+    val ramStr = if (vitals.isRamAvailable) "${vitals.ramUsedPercent}% (${vitals.ramAvailableMb} MB متاح)" else "غير متاح"
+    val storageStr = if (vitals.isStorageAvailable) "${vitals.storageUsedPercent}% (${String.format(java.util.Locale.US, "%.1f", vitals.storageAvailableGb)} GB متاح)" else "غير متاح"
+    val cpuStr = if (vitals.isCpuLoadAvailable) "${vitals.cpuLoadPercent}%" else "غير متاح"
+    val tempStr = if (vitals.isTemperatureAvailable) "${vitals.temperatureCelsius.toInt()}°م (${vitals.temperatureSourceArabic})" else "غير متاح"
+
+    Surface(
+        color = resolvedWidgetSurface(CarbonSurface),
+        shape = RoundedCornerShape(14.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, CarbonCardBorder),
+        modifier = modifier.fillMaxSize()
+    ) {
+        if (style == WidgetStyle.HEAD_UNIT_VITALS_MINI) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center
+            ) {
+                Icon(Icons.Default.Memory, null, tint = widgetColors.accent, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(6.dp))
+                Text("RAM: $ramStr", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary)
+            }
+        } else if (style == WidgetStyle.HEAD_UNIT_VITALS_COMPACT) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceAround
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("RAM", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
+                    Text(if (vitals.isRamAvailable) "${vitals.ramUsedPercent}%" else "غير متاح", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary)
+                }
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("التخزين", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
+                    Text(if (vitals.isStorageAvailable) "${vitals.storageUsedPercent}%" else "غير متاح", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary)
+                }
+            }
+        } else {
+            Column(
+                modifier = Modifier.fillMaxSize().padding(10.dp),
+                verticalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                        Icon(Icons.Default.Memory, null, tint = widgetColors.accent, modifier = Modifier.size(18.dp))
+                        Text("حالة النظام والجهاز", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.accent)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("ذاكرة RAM", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
+                        Text(ramStr, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("ذاكرة التخزين", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
+                        Text(storageStr, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text("استهلاك CPU", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
+                        Text(cpuStr, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
+                    }
+                    Column(Modifier.weight(1f)) {
+                        Text("حرارة الجهاز", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
+                        Text(tempStr, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun SquareControlButton(
     icon: ImageVector,
     label: String,

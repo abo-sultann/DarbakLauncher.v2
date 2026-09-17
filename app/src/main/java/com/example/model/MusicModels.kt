@@ -17,5 +17,8 @@ data class MusicPlaybackState(
     val durationMs: Long = 0L,
     val volumeLevel: Float = 0.8f,
     val playlist: List<MusicTrack> = emptyList(),
-    val errorMessage: String? = null
+    val errorMessage: String? = null,
+    val isExternalSession: Boolean = false,
+    val externalTitle: String = "",
+    val externalArtist: String = ""
 )
