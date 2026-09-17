@@ -2,7 +2,7 @@ name: Build Launcher 2026 APK
 
 on:
   push:
-    branches: [ main, darbak-platform-v1, dev/launcher-refresh ]
+    branches: [ main, darbak-platform-v1, dev/launcher-refresh, test-v2-side-by-side ]
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
@@ -62,7 +62,7 @@ jobs:
       - name: Upload Stable APK
         uses: actions/upload-artifact@v4
         with:
-          name: DarbakLauncher-v2-dev
+          name: DarbakLauncher-v2-TEST-side-by-side
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 1
