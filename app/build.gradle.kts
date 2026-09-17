@@ -10,11 +10,11 @@ android {
   compileSdk { version = release(36) { minorApiLevel = 1 } }
 
   defaultConfig {
-    applicationId = "com.aistudio.carlauncher.lzrk26"
+    applicationId = "com.aistudio.carlauncher.lzrk26.v2test"
     minSdk = 25
     targetSdk = 36
     versionCode = 20009
-    versionName = "2.0.9"
+    versionName = "2.0.9-v2test"
     buildConfigField("String", "UPDATE_MANIFEST_URL", "\"https://drive.google.com/uc?export=download&id=15Ki1PBf0_erdbITrYh8k80Kt4rWC5yLi\"")
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
