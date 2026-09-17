@@ -235,7 +235,7 @@ fun HeadUnitVitalsWidget(
     val ramStr = if (vitals.isRamAvailable) "${vitals.ramUsedPercent}% (${vitals.ramAvailableMb} MB متاح)" else "غير متاح"
     val storageStr = if (vitals.isStorageAvailable) "${vitals.storageUsedPercent}% (${String.format(java.util.Locale.US, "%.1f", vitals.storageAvailableGb)} GB متاح)" else "غير متاح"
     val cpuStr = if (vitals.isCpuLoadAvailable) "${vitals.cpuLoadPercent}%" else "غير متاح"
-    val tempStr = if (vitals.isTemperatureAvailable) "${vitals.temperatureCelsius.toInt()}°م" else "غير متاح"
+    val tempStr = if (vitals.isTemperatureAvailable) "${vitals.temperatureCelsius.toInt()}°م (${vitals.temperatureSourceArabic})" else "غير متاح"
 
     Surface(
         color = resolvedWidgetSurface(CarbonSurface),

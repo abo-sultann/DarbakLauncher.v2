@@ -39,6 +39,7 @@ import com.example.ui.theme.*
 fun WidgetFrame(
     widgetItem: WidgetItem,
     isDesignMode: Boolean,
+    isNightMode: Boolean = false,
     isSelected: Boolean = false,
     onSelect: () -> Unit = {},
     onChangeStyle: () -> Unit,
@@ -82,12 +83,12 @@ fun WidgetFrame(
         WidgetSurfaceStyle.GLASS -> if (tone == WidgetTone.BLACK) {
             Color.White.copy(alpha = (.26f + .46f * surfaceOpacity).coerceAtMost(.74f))
         } else {
-            Color.Black.copy(alpha = (.20f + .48f * surfaceOpacity).coerceAtMost(.76f))
+            Color.Black.copy(alpha = (if (isNightMode) .45f + .40f * surfaceOpacity else .20f + .48f * surfaceOpacity).coerceAtMost(.88f))
         }
         WidgetSurfaceStyle.CARD -> if (tone == WidgetTone.BLACK) {
             Color.White.copy(alpha = (.66f + .32f * surfaceOpacity).coerceAtMost(.98f))
         } else {
-            Color.Black.copy(alpha = (.64f + .33f * surfaceOpacity).coerceAtMost(.97f))
+            Color.Black.copy(alpha = (if (isNightMode) .78f + .20f * surfaceOpacity else .64f + .33f * surfaceOpacity).coerceAtMost(.98f))
         }
     }
     val outlineColor = when {

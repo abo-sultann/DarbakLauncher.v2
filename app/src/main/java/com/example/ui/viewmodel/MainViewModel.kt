@@ -23,6 +23,7 @@ import com.example.ui.components.CarScreen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -55,7 +56,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val offlineMapSearchEngine = runtime.mapSearch
     private val darbakCenterManager = DarbakCenterManager(application)
     private val headUnitVitalsManager = HeadUnitVitalsManager(application)
-    private val _headUnitVitals = MutableStateFlow(headUnitVitalsManager.readVitals())
+    private val _headUnitVitals = MutableStateFlow(HeadUnitVitals())
     val headUnitVitals: StateFlow<HeadUnitVitals> = _headUnitVitals.asStateFlow()
 
     val darbakApps: StateFlow<List<DarbakAppItem>> = darbakCenterManager.darbakApps
@@ -148,6 +149,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 if (telemetry.hasGpsFix && telemetry.accuracyMeters <= 45f && telemetry.fixAgeMs <= 8_000L) {
                     offroadTrackManager.record(telemetry)
                 }
+                if (telemetry.hasGpsFix && telemetry.accuracyMeters <= 60f && telemetry.latitude != 0.0 && telemetry.longitude != 0.0) {
+                    preferencesManager.saveLastValidLocation(telemetry.latitude, telemetry.longitude)
+                }
+                updateNightMode()
+            }
+        }
+        viewModelScope.launch(Dispatchers.Default) {
+            while (isActive) {
+                delay(60_000L)
                 updateNightMode()
             }
         }
@@ -166,7 +176,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     private fun updateNightMode() {
-        _isNightMode.value = evaluateNightMode(_settings.value.dayNightMode, gpsTelemetry.value)
+        _isNightMode.value = evaluateNightMode(_settings.value.dayNightMode, gpsTelemetry.value, preferencesManager)
     }
 
     private fun checkSafeMode() {
@@ -1094,7 +1104,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     }
 
     companion object {
-        fun evaluateNightMode(mode: DayNightMode, telemetry: GpsTelemetry): Boolean {
+        fun evaluateNightMode(
+            mode: DayNightMode,
+            telemetry: GpsTelemetry,
+            preferencesManager: PreferencesManager? = null
+        ): Boolean {
             return when (mode) {
                 DayNightMode.FORCED_DAY -> false
                 DayNightMode.FORCED_NIGHT -> true
@@ -1105,8 +1119,19 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 DayNightMode.AUTO_SUNRISE_SUNSET -> {
                     val cal = java.util.Calendar.getInstance()
                     val currentMinute = cal.get(java.util.Calendar.HOUR_OF_DAY) * 60 + cal.get(java.util.Calendar.MINUTE)
-                    val solar = SolarCalculator.calculateSolarTimes(telemetry.latitude, telemetry.longitude, cal)
-                    currentMinute < solar.sunriseMinuteOfDay || currentMinute >= solar.sunsetMinuteOfDay
+                    val hour = cal.get(java.util.Calendar.HOUR_OF_DAY)
+
+                    val validLocation = if (telemetry.hasGpsFix && telemetry.latitude != 0.0 && telemetry.longitude != 0.0) {
+                        Pair(telemetry.latitude, telemetry.longitude)
+                    } else preferencesManager?.getLastValidLocation()
+
+                    if (validLocation != null) {
+                        val solar = SolarCalculator.calculateSolarTimes(validLocation.first, validLocation.second, cal)
+                        currentMinute < solar.sunriseMinuteOfDay || currentMinute >= solar.sunsetMinuteOfDay
+                    } else {
+                        // Explicit clock time fallback when no valid GPS location has ever been saved
+                        hour < 6 || hour >= 18
+                    }
                 }
             }
         }

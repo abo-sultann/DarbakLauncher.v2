@@ -21,10 +21,12 @@ class ThemeEngineTest {
     }
 
     @Test
-    fun `solar calculator fallback works for zero coordinates`() {
-        val times = SolarCalculator.calculateSolarTimes(0.0, 0.0)
-        assertEquals(360, times.sunriseMinuteOfDay)
-        assertEquals(1080, times.sunsetMinuteOfDay)
+    fun `auto solar mode falls back to clock when no gps location is available`() {
+        val telemetry = GpsTelemetry(hasGpsFix = false, latitude = 0.0, longitude = 0.0)
+        // Without persistent preferences or GPS fix, falls back to AUTO_CLOCK
+        val isNight = MainViewModel.evaluateNightMode(DayNightMode.AUTO_SUNRISE_SUNSET, telemetry)
+        val expected = MainViewModel.evaluateNightMode(DayNightMode.AUTO_CLOCK, telemetry)
+        assertEquals(expected, isNight)
     }
 
     @Test

@@ -5,7 +5,9 @@ import android.media.MediaMetadata
 import android.media.session.MediaController
 import android.media.session.MediaSessionManager
 import android.media.session.PlaybackState
+import android.provider.Settings
 import android.util.Log
+import com.example.service.MediaNotificationListenerService
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,10 +27,22 @@ class ExternalMediaSessionManager(private val context: Context) {
 
     private var activeController: MediaController? = null
 
+    fun isNotificationListenerGranted(): Boolean {
+        return try {
+            val component = MediaNotificationListenerService.getComponentName(context).flattenToString()
+            val enabledListeners = Settings.Secure.getString(context.contentResolver, "enabled_notification_listeners")
+            enabledListeners != null && enabledListeners.contains(component)
+        } catch (_: Exception) {
+            false
+        }
+    }
+
     fun checkActiveSessions(): ExternalMediaState {
         try {
             val msm = mediaSessionManager ?: return ExternalMediaState()
-            val controllers = msm.getActiveSessions(null)
+            val listenerComponent = MediaNotificationListenerService.getComponentName(context)
+
+            val controllers = msm.getActiveSessions(listenerComponent)
             val externalController = controllers.firstOrNull { it.packageName != context.packageName }
 
             if (externalController != null) {
@@ -56,9 +70,9 @@ class ExternalMediaSessionManager(private val context: Context) {
                 return state
             }
         } catch (e: SecurityException) {
-            // Graceful degradation when Notification Listener permission is not granted on API 25.
+            // Notification Listener permission not granted; fallback to local player.
         } catch (e: Exception) {
-            Log.w("ExternalMediaSession", "Error checking external media sessions", e)
+            Log.w("ExternalMediaSession", "Error checking active media sessions", e)
         }
 
         activeController = null

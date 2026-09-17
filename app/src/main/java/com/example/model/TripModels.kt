@@ -65,5 +65,6 @@ data class GpsTelemetry(
     val rawAltitude: Double = altitudeMeters,
     val rawSpeedKmH: Float = speedKmH,
     val rawAccuracyMeters: Float = accuracyMeters,
-    val rawBearingDegrees: Float = bearingDegrees
+    val rawBearingDegrees: Float = bearingDegrees,
+    val sensorHeadingDegrees: Float? = null
 )

@@ -220,10 +220,22 @@ fun OffroadInstrumentsWidget(
 ) {
     val widgetColors = resolvedWidgetColors()
     val hasFix = gpsTelemetry.hasGpsFix && gpsTelemetry.latitude != 0.0 && gpsTelemetry.longitude != 0.0
-    val headingStr = if (hasFix) "${gpsTelemetry.bearingDegrees.toInt()}° ${bearingToArabicDirection(gpsTelemetry.bearingDegrees)}" else "غير متاح"
+    val isMoving = hasFix && gpsTelemetry.speedKmH >= 3f
+    val activeHeading = if (isMoving) gpsTelemetry.bearingDegrees else gpsTelemetry.sensorHeadingDegrees
+
+    val headingStr = if (activeHeading != null) {
+        "${activeHeading.toInt()}° ${bearingToArabicDirection(activeHeading)}"
+    } else "غير متاح"
+
     val altitudeStr = if (hasFix && gpsTelemetry.altitudeMeters != 0.0) "${gpsTelemetry.altitudeMeters.toInt()} م" else "غير متاح"
     val accuracyStr = if (hasFix) "±${gpsTelemetry.accuracyMeters.toInt()} م" else "غير متاح"
-    val fixStateStr = if (hasFix) "ثابت 3D" else if (gpsTelemetry.statusArabic.isNotBlank()) gpsTelemetry.statusArabic else "غير متاح"
+    val fixStateStr = if (hasFix) "إشارة نشطة" else if (gpsTelemetry.statusArabic.isNotBlank()) gpsTelemetry.statusArabic else "غير متاح"
+    val qualityLabel = when {
+        !hasFix -> "غير متاح"
+        gpsTelemetry.accuracyMeters <= 10f -> "ممتازة"
+        gpsTelemetry.accuracyMeters <= 25f -> "جيدة"
+        else -> "متوسطة"
+    }
 
     Surface(
         color = resolvedWidgetSurface(CarbonSurface),
@@ -287,7 +299,7 @@ fun OffroadInstrumentsWidget(
                     }
                     Column(Modifier.weight(1f)) {
                         Text("حالة الإشارة", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
-                        Text(if (hasFix) "ممتازة" else "ضعيفة", style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = if (hasFix) EmeraldSafe else AmberRacing, maxLines = 1)
+                        Text(qualityLabel, style = MaterialTheme.typography.bodyMedium.copy(fontWeight = FontWeight.Bold), color = if (hasFix) EmeraldSafe else AmberRacing, maxLines = 1)
                     }
                 }
             }

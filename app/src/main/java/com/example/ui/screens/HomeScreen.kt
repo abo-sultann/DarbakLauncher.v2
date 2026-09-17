@@ -31,6 +31,7 @@ fun HomeScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
     val widgets by viewModel.widgets.collectAsState()
     val isDesignMode by viewModel.isDesignMode.collectAsState()
     val settings by viewModel.settings.collectAsState()
+    val isNightMode by viewModel.isNightMode.collectAsState()
     val installedApps by viewModel.installedApps.collectAsState()
     val playbackState by viewModel.playbackState.collectAsState()
     val gpsTelemetry by viewModel.gpsTelemetry.collectAsState()
@@ -93,6 +94,7 @@ fun HomeScreen(viewModel: MainViewModel, modifier: Modifier = Modifier) {
                 WidgetFrame(
                     widgetItem = normalized,
                     isDesignMode = isDesignMode,
+                    isNightMode = isNightMode,
                     isSelected = selectedWidgetId == normalized.id,
                     onSelect = {
                         if (selectedWidgetId != normalized.id) rememberUndoPoint()

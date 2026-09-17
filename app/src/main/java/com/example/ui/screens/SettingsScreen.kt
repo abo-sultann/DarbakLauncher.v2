@@ -228,6 +228,17 @@ fun SettingsScreen(
                             SettingsCategory.MEDIA -> {
                                 item { SwitchRow("حفظ آخر موضع", "عند التشغيل لاحقًا يبدأ من نفس المقطع والموضع دون تشغيل تلقائي", settings.resumeMusicPlayback) { viewModel.updateSettings(settings.copy(resumeMusicPlayback = it)) } }
                                 item { ActionButton("إضافة ملف صوت", Icons.Default.LibraryMusic) { viewModel.prepareForExternalPicker(); musicPicker.launch("audio/*") } }
+                                item {
+                                    ActionButton("إذن الوصول للوسائط الخارجية (Notification Listener)", Icons.Default.Settings) {
+                                        viewModel.prepareForExternalPicker()
+                                        runCatching {
+                                            val intent = android.content.Intent(android.provider.Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS).apply {
+                                                addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                                            }
+                                            viewModel.getApplication<android.app.Application>().startActivity(intent)
+                                        }
+                                    }
+                                }
                                 item { StatusMetric("المقطع الحالي", playback.currentTrack?.title ?: "لا يوجد", playback.currentTrack != null) }
                                 item { StatusMetric("المقاطع المكتشفة", playback.playlist.size.toString(), playback.playlist.isNotEmpty()) }
                             }

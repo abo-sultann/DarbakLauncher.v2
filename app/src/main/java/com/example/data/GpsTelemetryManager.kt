@@ -18,9 +18,11 @@ import kotlinx.coroutines.flow.asStateFlow
 import java.util.ArrayDeque
 import kotlin.math.max
 
-class GpsTelemetryManager(private val context: Context) : LocationListener {
+class GpsTelemetryManager(private val context: Context) : LocationListener, android.hardware.SensorEventListener {
 
     private val locationManager = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager
+    private val sensorManager = context.getSystemService(Context.SENSOR_SERVICE) as? android.hardware.SensorManager
+    private var currentSensorHeading: Float? = null
     private val _telemetry = MutableStateFlow(GpsTelemetry())
     val telemetry: StateFlow<GpsTelemetry> = _telemetry.asStateFlow()
 
@@ -65,6 +67,13 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
             if (isNetworkEnabled) lm.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, 4000L, 10f, this)
             isListening = true
 
+            try {
+                val sensor = sensorManager?.getDefaultSensor(android.hardware.Sensor.TYPE_ORIENTATION)
+                if (sensor != null) {
+                    sensorManager?.registerListener(this, sensor, android.hardware.SensorManager.SENSOR_DELAY_UI)
+                }
+            } catch (_: Exception) { }
+
             val lastGps = if (isGpsEnabled) lm.getLastKnownLocation(LocationManager.GPS_PROVIDER) else null
             if (lastGps != null && locationAgeMs(lastGps) <= LAST_KNOWN_MAX_AGE_MS && accuracyOf(lastGps) <= 60f) {
                 processLocation(lastGps, fromLastKnown = true)
@@ -85,9 +94,24 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
     fun restartGpsUpdates() { stopGpsUpdates(); startGpsUpdates() }
 
     fun stopGpsUpdates() {
-        try { if (isListening) locationManager?.removeUpdates(this) } catch (e: Exception) { Log.e(TAG, "Error stopping GPS updates", e) }
+        try {
+            if (isListening) {
+                locationManager?.removeUpdates(this)
+                sensorManager?.unregisterListener(this)
+            }
+        } catch (e: Exception) { Log.e(TAG, "Error stopping GPS updates", e) }
         finally { isListening = false }
     }
+
+    override fun onSensorChanged(event: android.hardware.SensorEvent) {
+        if (event.sensor.type == android.hardware.Sensor.TYPE_ORIENTATION) {
+            val heading = ((event.values[0] % 360f) + 360f) % 360f
+            currentSensorHeading = heading
+            _telemetry.value = _telemetry.value.copy(sensorHeadingDegrees = heading)
+        }
+    }
+
+    override fun onAccuracyChanged(sensor: android.hardware.Sensor?, accuracy: Int) {}
 
     override fun onLocationChanged(location: Location) = processLocation(location, fromLastKnown = false)
 
@@ -210,7 +234,8 @@ class GpsTelemetryManager(private val context: Context) : LocationListener {
                 rawAltitude = rawAlt,
                 rawSpeedKmH = rawSpeed,
                 rawAccuracyMeters = accuracy,
-                rawBearingDegrees = if (location.hasBearing()) location.bearing else 0f
+                rawBearingDegrees = if (location.hasBearing()) location.bearing else 0f,
+                sensorHeadingDegrees = currentSensorHeading
             )
         } catch (e: Exception) {
             Log.e(TAG, "Error processing location update", e)

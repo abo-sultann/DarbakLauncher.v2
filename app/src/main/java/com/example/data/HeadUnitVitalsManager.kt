@@ -27,7 +27,8 @@ data class HeadUnitVitals(
     val isCpuLoadAvailable: Boolean = false,
 
     val temperatureCelsius: Float = 0f,
-    val isTemperatureAvailable: Boolean = false
+    val isTemperatureAvailable: Boolean = false,
+    val temperatureSourceArabic: String = ""
 )
 
 class HeadUnitVitalsManager(private val context: Context) {
@@ -56,7 +57,8 @@ class HeadUnitVitalsManager(private val context: Context) {
             isCpuLoadAvailable = cpu.second,
 
             temperatureCelsius = temp.first,
-            isTemperatureAvailable = temp.second
+            isTemperatureAvailable = temp.second,
+            temperatureSourceArabic = temp.third
         )
     }
 
@@ -130,8 +132,8 @@ class HeadUnitVitalsManager(private val context: Context) {
         Pair(0, false)
     }
 
-    private fun readTemperatureVitals(): Pair<Float, Boolean> {
-        // Try thermal zone files first
+    private fun readTemperatureVitals(): Triple<Float, Boolean, String> {
+        // Try thermal zone files first for system/CPU temperature
         try {
             for (i in 0..9) {
                 val zoneFile = File("/sys/class/thermal/thermal_zone$i/temp")
@@ -140,13 +142,13 @@ class HeadUnitVitalsManager(private val context: Context) {
                     val valFloat = raw.toFloatOrNull()
                     if (valFloat != null) {
                         val temp = if (valFloat > 1000f) valFloat / 1000f else valFloat
-                        if (temp in 10f..110f) return Pair(temp, true)
+                        if (temp in 10f..110f) return Triple(temp, true, "حرارة النظام")
                     }
                 }
             }
         } catch (_: Exception) { }
 
-        // Battery temperature fallback
+        // Battery temperature fallback with explicit source label
         try {
             val filter = IntentFilter(Intent.ACTION_BATTERY_CHANGED)
             val intent = context.registerReceiver(null, filter)
@@ -154,11 +156,11 @@ class HeadUnitVitalsManager(private val context: Context) {
                 val tempRaw = intent.getIntExtra(BatteryManager.EXTRA_TEMPERATURE, -999)
                 if (tempRaw != -999 && tempRaw > 0) {
                     val temp = tempRaw / 10f
-                    if (temp in 10f..100f) return Pair(temp, true)
+                    if (temp in 10f..100f) return Triple(temp, true, "حرارة البطارية")
                 }
             }
         } catch (_: Exception) { }
 
-        return Pair(0f, false)
+        return Triple(0f, false, "غير متاح")
     }
 }
