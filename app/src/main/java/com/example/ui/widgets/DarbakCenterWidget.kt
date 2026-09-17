@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.sp
 import com.example.model.DarbakAppItem
 import com.example.model.DarbakIntegrationState
 import com.example.model.WidgetStyle
+import com.example.model.toFamily
+import com.example.ui.components.resolvedWidgetColors
 import com.example.ui.theme.*
 import com.example.ui.viewmodel.MainViewModel
 
@@ -35,47 +37,62 @@ fun DarbakCenterWidget(
     onOpenCenter: () -> Unit = {}
 ) {
     val darbakApps by viewModel.darbakApps.collectAsState()
+    val widgetColors = resolvedWidgetColors()
+
+    val family = style.toFamily()
+    val shape = DarbakWidgetDesignTokens.radiusFor(family)
+    val surfaceColor = when (family) {
+        WidgetFamily.MINIMAL -> Color.Transparent
+        WidgetFamily.DARBAK_CARD -> DarbakWidgetDesignTokens.cardSurface()
+        WidgetFamily.INSTRUMENT -> DarbakWidgetDesignTokens.instrumentSurface()
+    }
+    val borderColor = when (family) {
+        WidgetFamily.MINIMAL -> Color.Transparent
+        WidgetFamily.DARBAK_CARD -> DarbakWidgetDesignTokens.cardBorder()
+        WidgetFamily.INSTRUMENT -> DarbakWidgetDesignTokens.instrumentBorder()
+    }
 
     Surface(
-        color = CarbonDark.copy(alpha = .64f),
-        shape = RoundedCornerShape(18.dp),
-        border = BorderStroke(1.dp, CyanNeon.copy(alpha = .30f)),
+        color = surfaceColor,
+        shape = shape,
+        border = BorderStroke(1.dp, borderColor),
         modifier = Modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(18.dp))
+            .padding(DarbakWidgetDesignTokens.ContentPadding)
             .then(if (interactionEnabled) Modifier.clickable { onOpenCenter() } else Modifier)
     ) {
-        when (style) {
-            WidgetStyle.DARBAK_CENTER_COMPACT -> DarbakCenterCompactView(darbakApps)
-            WidgetStyle.DARBAK_CENTER_WIDE -> DarbakCenterWideView(darbakApps)
-            else -> DarbakCenterCardView(darbakApps)
+        when (family) {
+            WidgetFamily.MINIMAL -> DarbakCenterCompactView(darbakApps)
+            WidgetFamily.DARBAK_CARD -> DarbakCenterCardView(darbakApps)
+            WidgetFamily.INSTRUMENT -> DarbakCenterWideView(darbakApps)
         }
     }
 }
 
 @Composable
 private fun DarbakCenterCardView(apps: List<DarbakAppItem>) {
+    val widgetColors = resolvedWidgetColors()
     val integratedCount = apps.count { it.integrationState == DarbakIntegrationState.FULLY_INTEGRATED && it.isInstalled }
     val warningCount = apps.count { it.status?.isWarning == true || it.status?.isError == true }
 
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 10.dp, vertical = 8.dp),
+            .padding(horizontal = 8.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Surface(
             color = CyanNeon.copy(alpha = .12f),
-            shape = RoundedCornerShape(12.dp),
-            modifier = Modifier.size(42.dp)
+            shape = RoundedCornerShape(10.dp),
+            modifier = Modifier.size(36.dp)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Icon(
                     imageVector = Icons.Default.Hub,
                     contentDescription = "مركز دربك",
                     tint = CyanNeon,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -86,36 +103,24 @@ private fun DarbakCenterCardView(apps: List<DarbakAppItem>) {
         ) {
             Text(
                 text = "مركز دربك",
-                color = TextPrimary,
-                fontSize = 12.sp,
-                fontWeight = FontWeight.Black
+                color = widgetColors.primary,
+                style = DarbakWidgetDesignTokens.Typography.labelMedium
             )
             Text(
-                text = "$integratedCount من أصل ${apps.size} خدمات مربوطة",
-                color = TextSecondary,
-                fontSize = 9.sp,
+                text = "$integratedCount/${apps.size} خدمات مربوطة",
+                color = widgetColors.secondary,
+                style = DarbakWidgetDesignTokens.Typography.bodySmall,
                 maxLines = 1
             )
         }
 
         if (warningCount > 0) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = AmberRacing,
-                    modifier = Modifier.size(14.dp)
-                )
-                Text(
-                    text = "$warningCount تنبيه",
-                    color = AmberRacing,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = AmberRacing,
+                modifier = Modifier.size(14.dp)
+            )
         } else {
             Icon(
                 imageVector = Icons.Default.CheckCircle,
@@ -129,12 +134,13 @@ private fun DarbakCenterCardView(apps: List<DarbakAppItem>) {
 
 @Composable
 private fun DarbakCenterCompactView(apps: List<DarbakAppItem>) {
+    val widgetColors = resolvedWidgetColors()
     val integratedCount = apps.count { it.integrationState == DarbakIntegrationState.FULLY_INTEGRATED && it.isInstalled }
 
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 4.dp),
+            .padding(horizontal = 6.dp, vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
@@ -150,29 +156,28 @@ private fun DarbakCenterCompactView(apps: List<DarbakAppItem>) {
             )
             Text(
                 text = "مركز دربك",
-                color = TextPrimary,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
+                color = widgetColors.primary,
+                style = DarbakWidgetDesignTokens.Typography.labelSmall
             )
         }
 
         Text(
             text = "$integratedCount/${apps.size}",
             color = CyanNeon,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Black
+            style = DarbakWidgetDesignTokens.Typography.labelSmall
         )
     }
 }
 
 @Composable
 private fun DarbakCenterWideView(apps: List<DarbakAppItem>) {
+    val widgetColors = resolvedWidgetColors()
     Row(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 12.dp, vertical = 6.dp),
+            .padding(horizontal = 10.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(10.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -182,13 +187,12 @@ private fun DarbakCenterWideView(apps: List<DarbakAppItem>) {
                 imageVector = Icons.Default.Hub,
                 contentDescription = null,
                 tint = CyanNeon,
-                modifier = Modifier.size(20.dp)
+                modifier = Modifier.size(18.dp)
             )
             Text(
                 text = "مركز دربك",
-                color = TextPrimary,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Black
+                color = widgetColors.primary,
+                style = DarbakWidgetDesignTokens.Typography.labelMedium
             )
         }
 
@@ -204,15 +208,14 @@ private fun DarbakCenterWideView(apps: List<DarbakAppItem>) {
                 ) {
                     Text(
                         text = app.titleArabic.replace("دربك", "").trim(),
-                        color = if (app.integrationState == DarbakIntegrationState.FULLY_INTEGRATED) TextPrimary else TextMuted,
-                        fontSize = 9.sp,
-                        fontWeight = if (app.integrationState == DarbakIntegrationState.FULLY_INTEGRATED) FontWeight.Bold else FontWeight.Normal,
+                        color = if (app.integrationState == DarbakIntegrationState.FULLY_INTEGRATED) widgetColors.primary else widgetColors.secondary,
+                        style = DarbakWidgetDesignTokens.Typography.bodySmall,
                         maxLines = 1
                     )
                     Text(
                         text = when (app.integrationState) {
                             DarbakIntegrationState.FULLY_INTEGRATED -> app.status?.summaryText ?: "مربوط"
-                            DarbakIntegrationState.REVIEW_REQUIRED -> "يتطلب توثيق"
+                            DarbakIntegrationState.REVIEW_REQUIRED -> "توثيق"
                             DarbakIntegrationState.UNCONFIGURED -> "غير مهيأ"
                         },
                         color = when {
@@ -222,7 +225,7 @@ private fun DarbakCenterWideView(apps: List<DarbakAppItem>) {
                             app.status?.isWarning == true -> AmberRacing
                             else -> EmeraldSafe
                         },
-                        fontSize = 7.sp,
+                        style = DarbakWidgetDesignTokens.Typography.bodySmall,
                         maxLines = 1
                     )
                 }

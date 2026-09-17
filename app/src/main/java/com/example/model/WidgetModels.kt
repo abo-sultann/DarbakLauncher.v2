@@ -197,6 +197,38 @@ fun preferredWidgetStylesFor(type: WidgetType): List<WidgetStyle> = when (type) 
     )
 }
 
+fun WidgetStyle.toFamily(): com.example.ui.theme.WidgetFamily = when (this) {
+    WidgetStyle.CLOCK_MINIMAL,
+    WidgetStyle.SPEED_DIGITAL_LARGE,
+    WidgetStyle.DATE_ONLY,
+    WidgetStyle.GPS_INDICATOR_MINI,
+    WidgetStyle.MUSIC_MINIMAL,
+    WidgetStyle.MAP_MINI,
+    WidgetStyle.TRIP_SPEED_DISTANCE,
+    WidgetStyle.APPS_ICONS_ONLY,
+    WidgetStyle.CONTROLS_CIRCULAR,
+    WidgetStyle.MAINTENANCE_VERTICAL,
+    WidgetStyle.DARBAK_CENTER_COMPACT,
+    WidgetStyle.OFFROAD_INSTRUMENTS_COMPACT,
+    WidgetStyle.HEAD_UNIT_VITALS_MINI -> com.example.ui.theme.WidgetFamily.MINIMAL
+
+    WidgetStyle.CLOCK_WITH_DATE,
+    WidgetStyle.SPEED_GAUGE_CIRCULAR,
+    WidgetStyle.DATE_DAY_DATE,
+    WidgetStyle.GPS_COORDINATES,
+    WidgetStyle.MUSIC_COMPACT,
+    WidgetStyle.MAP_WITH_GPS,
+    WidgetStyle.TRIP_CARD,
+    WidgetStyle.APPS_HORIZONTAL_DOCK,
+    WidgetStyle.CONTROLS_HORIZONTAL_BAR,
+    WidgetStyle.MAINTENANCE_GRID,
+    WidgetStyle.DARBAK_CENTER_CARD,
+    WidgetStyle.OFFROAD_INSTRUMENTS_CARD,
+    WidgetStyle.HEAD_UNIT_VITALS_COMPACT -> com.example.ui.theme.WidgetFamily.DARBAK_CARD
+
+    else -> com.example.ui.theme.WidgetFamily.INSTRUMENT
+}
+
 /** Maps every 1.x near-duplicate to the closest rebuilt construction. */
 fun modernWidgetStyle(style: WidgetStyle): WidgetStyle {
     if (style in preferredWidgetStylesFor(style.type)) return style

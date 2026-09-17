@@ -16,13 +16,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.MusicPlaybackState
 import com.example.model.WidgetStyle
+import com.example.model.toFamily
+import com.example.ui.components.ResolvedWidgetColors
 import com.example.ui.components.resolvedWidgetColors
-import com.example.ui.components.resolvedWidgetSurface
-import com.example.ui.theme.*
+import com.example.ui.theme.DarbakWidgetDesignTokens
+import com.example.ui.theme.WidgetFamily
+import com.example.ui.theme.WidgetSizeCategory
+import com.example.ui.theme.CarbonDark
 
 @Composable
 fun ControlsWidget(
@@ -36,21 +41,24 @@ fun ControlsWidget(
     modifier: Modifier = Modifier
 ) {
     val widgetColors = resolvedWidgetColors()
-    Box(
+    val family = style.toFamily()
+
+    BoxWithConstraints(
         modifier = modifier
             .fillMaxSize()
-            .padding(6.dp),
+            .padding(DarbakWidgetDesignTokens.ContentPadding),
         contentAlignment = Alignment.Center
     ) {
-        when (style) {
-            WidgetStyle.CONTROLS_CIRCULAR -> {
+        val sizeCategory = WidgetSizeCategory.from(maxWidth, maxHeight)
+
+        when (family) {
+            WidgetFamily.MINIMAL -> {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     CircleControlButton(icon = Icons.Default.VolumeDown, label = "خفض", onClick = { onVolumeAdjust(-1f) })
-                    CircleControlButton(icon = Icons.Default.VolumeOff, label = "كتم", tint = widgetColors.secondary, onClick = onToggleMute)
                     CircleControlButton(
                         icon = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
                         label = "تشغيل",
@@ -61,143 +69,89 @@ fun ControlsWidget(
                     CircleControlButton(icon = Icons.Default.VolumeUp, label = "رفع", onClick = { onVolumeAdjust(1f) })
                 }
             }
-
-            WidgetStyle.CONTROLS_SQUARE -> {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceEvenly,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    SquareControlButton(icon = Icons.Default.VolumeDown, label = "خفض الصوت", onClick = { onVolumeAdjust(-1f) })
-                    SquareControlButton(
-                        icon = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                        label = "الوسائط",
-                        tint = widgetColors.accent,
-                        onClick = onTogglePlayPause
-                    )
-                    SquareControlButton(icon = Icons.Default.VolumeUp, label = "رفع الصوت", onClick = { onVolumeAdjust(1f) })
-                }
-            }
-
-            WidgetStyle.CONTROLS_HORIZONTAL_BAR -> {
+            WidgetFamily.DARBAK_CARD -> {
                 Surface(
-                    color = resolvedWidgetSurface(CarbonSurface),
-                    shape = RoundedCornerShape(20.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CarbonCardBorder),
-                    modifier = Modifier.fillMaxWidth().height(46.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceEvenly,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        IconButton(onClick = { onVolumeAdjust(-1f) }) {
-                            Icon(Icons.Default.VolumeDown, contentDescription = "خفض", tint = widgetColors.primary)
-                        }
-                        IconButton(onClick = onToggleMute) {
-                            Icon(Icons.Default.VolumeMute, contentDescription = "كتم", tint = widgetColors.secondary)
-                        }
-                        IconButton(onClick = onTogglePlayPause) {
-                            Icon(
-                                imageVector = if (playbackState.isPlaying) Icons.Default.PauseCircle else Icons.Default.PlayCircle,
-                                contentDescription = "تشغيل",
-                                tint = widgetColors.accent
-                            )
-                        }
-                        IconButton(onClick = onNext) {
-                            Icon(Icons.Default.SkipPrevious, contentDescription = "التالي", tint = widgetColors.primary)
-                        }
-                        IconButton(onClick = { onVolumeAdjust(1f) }) {
-                            Icon(Icons.Default.VolumeUp, contentDescription = "رفع", tint = widgetColors.primary)
-                        }
-                    }
-                }
-            }
-
-            WidgetStyle.CONTROLS_CARD -> {
-                Surface(
-                    color = resolvedWidgetSurface(CarbonSurface),
-                    shape = RoundedCornerShape(12.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CarbonCardBorder),
+                    color = DarbakWidgetDesignTokens.cardSurface(),
+                    shape = DarbakWidgetDesignTokens.CardRadius,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, DarbakWidgetDesignTokens.cardBorder()),
                     modifier = Modifier.fillMaxSize()
                 ) {
                     Column(
                         modifier = Modifier.fillMaxSize().padding(8.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(text = "لوحة التحكم السريع", style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.Bold), color = widgetColors.accent)
+                        Text(text = "لوحة التحكم السريع", style = DarbakWidgetDesignTokens.Typography.labelSmall, color = widgetColors.accent)
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceAround,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             IconButton(onClick = { onVolumeAdjust(-1f) }) {
-                                Icon(Icons.Default.VolumeDown, contentDescription = null, tint = widgetColors.primary)
+                                Icon(Icons.Default.VolumeDown, contentDescription = "خفض", tint = widgetColors.primary)
                             }
                             IconButton(onClick = onToggleMute) {
-                                Icon(Icons.Default.VolumeOff, contentDescription = null, tint = widgetColors.secondary)
+                                Icon(Icons.Default.VolumeOff, contentDescription = "كتم", tint = widgetColors.secondary)
                             }
                             IconButton(onClick = onTogglePlayPause) {
                                 Icon(
                                     imageVector = if (playbackState.isPlaying) Icons.Default.PauseCircle else Icons.Default.PlayCircle,
-                                    contentDescription = null,
+                                    contentDescription = "تشغيل",
                                     tint = widgetColors.accent,
-                                    modifier = Modifier.size(34.dp)
+                                    modifier = Modifier.size(32.dp)
                                 )
                             }
                             IconButton(onClick = { onVolumeAdjust(1f) }) {
-                                Icon(Icons.Default.VolumeUp, contentDescription = null, tint = widgetColors.primary)
+                                Icon(Icons.Default.VolumeUp, contentDescription = "رفع", tint = widgetColors.primary)
                             }
                         }
                     }
                 }
             }
-
-            WidgetStyle.CONTROLS_LARGE_AUTOMOTIVE -> {
-                Row(
-                    modifier = Modifier.fillMaxSize(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
+            WidgetFamily.INSTRUMENT -> {
+                Surface(
+                    color = DarbakWidgetDesignTokens.instrumentSurface(),
+                    shape = DarbakWidgetDesignTokens.InstrumentRadius,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, DarbakWidgetDesignTokens.instrumentBorder()),
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Button(
-                        onClick = { onVolumeAdjust(-1f) },
-                        colors = ButtonDefaults.buttonColors(containerColor = resolvedWidgetSurface(CarbonSurface)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CarbonCardBorder),
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        shape = RoundedCornerShape(10.dp)
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Icon(Icons.Default.VolumeDown, contentDescription = "خفض", tint = widgetColors.primary, modifier = Modifier.size(24.dp))
+                        Button(
+                            onClick = { onVolumeAdjust(-1f) },
+                            colors = ButtonDefaults.buttonColors(containerColor = DarbakWidgetDesignTokens.cardSurface()),
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(Icons.Default.VolumeDown, contentDescription = "خفض", tint = widgetColors.primary, modifier = Modifier.size(22.dp))
+                        }
+                        Button(
+                            onClick = onTogglePlayPause,
+                            colors = ButtonDefaults.buttonColors(containerColor = widgetColors.accent),
+                            modifier = Modifier.weight(1.2f).fillMaxHeight(),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(
+                                imageVector = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                contentDescription = "تشغيل/إيقاف",
+                                tint = CarbonDark,
+                                modifier = Modifier.size(26.dp)
+                            )
+                        }
+                        Button(
+                            onClick = { onVolumeAdjust(1f) },
+                            colors = ButtonDefaults.buttonColors(containerColor = DarbakWidgetDesignTokens.cardSurface()),
+                            modifier = Modifier.weight(1f).fillMaxHeight(),
+                            shape = RoundedCornerShape(8.dp),
+                            contentPadding = PaddingValues(0.dp)
+                        ) {
+                            Icon(Icons.Default.VolumeUp, contentDescription = "رفع", tint = widgetColors.primary, modifier = Modifier.size(22.dp))
+                        }
                     }
-                    Button(
-                        onClick = onTogglePlayPause,
-                        colors = ButtonDefaults.buttonColors(containerColor = widgetColors.accent),
-                        modifier = Modifier.weight(1.2f).fillMaxHeight(),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(
-                            imageVector = if (playbackState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = "تشغيل/إيقاف",
-                            tint = CarbonDark,
-                            modifier = Modifier.size(28.dp)
-                        )
-                    }
-                    Button(
-                        onClick = { onVolumeAdjust(1f) },
-                        colors = ButtonDefaults.buttonColors(containerColor = resolvedWidgetSurface(CarbonSurface)),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CarbonCardBorder),
-                        modifier = Modifier.weight(1f).fillMaxHeight(),
-                        shape = RoundedCornerShape(10.dp)
-                    ) {
-                        Icon(Icons.Default.VolumeUp, contentDescription = "رفع", tint = widgetColors.primary, modifier = Modifier.size(24.dp))
-                    }
-                }
-            }
-
-            else -> {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                    IconButton(onClick = { onVolumeAdjust(-1f) }) { Icon(Icons.Default.VolumeDown, null, tint = widgetColors.primary) }
-                    IconButton(onClick = onTogglePlayPause) { Icon(Icons.Default.PlayArrow, null, tint = widgetColors.accent) }
-                    IconButton(onClick = { onVolumeAdjust(1f) }) { Icon(Icons.Default.VolumeUp, null, tint = widgetColors.primary) }
                 }
             }
         }
@@ -214,13 +168,13 @@ private fun CircleControlButton(
 ) {
     val widgetColors = resolvedWidgetColors()
     Surface(
-        color = if (isPrimary) widgetColors.accent.copy(alpha = 0.25f) else CarbonSurface,
+        color = if (isPrimary) widgetColors.accent.copy(alpha = 0.25f) else DarbakWidgetDesignTokens.cardSurface(),
         shape = CircleShape,
-        border = androidx.compose.foundation.BorderStroke(1.dp, if (isPrimary) widgetColors.accent else CarbonCardBorder),
-        modifier = Modifier.size(46.dp)
+        border = androidx.compose.foundation.BorderStroke(1.dp, if (isPrimary) widgetColors.accent else DarbakWidgetDesignTokens.cardBorder()),
+        modifier = Modifier.size(40.dp)
     ) {
         IconButton(onClick = onClick) {
-            Icon(imageVector = icon, contentDescription = label, tint = tint ?: widgetColors.primary, modifier = Modifier.size(22.dp))
+            Icon(imageVector = icon, contentDescription = label, tint = tint ?: widgetColors.primary, modifier = Modifier.size(20.dp))
         }
     }
 }
@@ -237,103 +191,102 @@ fun HeadUnitVitalsWidget(
     val cpuStr = if (vitals.isCpuLoadAvailable) "${vitals.cpuLoadPercent}%" else "غير متاح"
     val tempStr = if (vitals.isTemperatureAvailable) "${vitals.temperatureCelsius.toInt()}°م (${vitals.temperatureSourceArabic})" else "غير متاح"
 
-    Surface(
-        color = resolvedWidgetSurface(CarbonSurface),
-        shape = RoundedCornerShape(14.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, CarbonCardBorder),
-        modifier = modifier.fillMaxSize()
+    val family = style.toFamily()
+
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(DarbakWidgetDesignTokens.ContentPadding),
+        contentAlignment = Alignment.Center
     ) {
-        if (style == WidgetStyle.HEAD_UNIT_VITALS_MINI) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                Icon(Icons.Default.Memory, null, tint = widgetColors.accent, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(6.dp))
-                Text("RAM: $ramStr", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary)
-            }
-        } else if (style == WidgetStyle.HEAD_UNIT_VITALS_COMPACT) {
-            Row(
-                modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceAround
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("RAM", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
-                    Text(if (vitals.isRamAvailable) "${vitals.ramUsedPercent}%" else "غير متاح", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary)
-                }
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text("التخزين", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
-                    Text(if (vitals.isStorageAvailable) "${vitals.storageUsedPercent}%" else "غير متاح", style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary)
+        val sizeCategory = WidgetSizeCategory.from(maxWidth, maxHeight)
+
+        when (family) {
+            WidgetFamily.MINIMAL -> {
+                Row(
+                    modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(Icons.Default.Memory, null, tint = widgetColors.accent, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("RAM: ${vitals.ramUsedPercent}%", style = DarbakWidgetDesignTokens.Typography.titleMedium, color = widgetColors.primary)
                 }
             }
-        } else {
-            Column(
-                modifier = Modifier.fillMaxSize().padding(10.dp),
-                verticalArrangement = Arrangement.SpaceBetween
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+            WidgetFamily.DARBAK_CARD -> {
+                Surface(
+                    color = DarbakWidgetDesignTokens.cardSurface(),
+                    shape = DarbakWidgetDesignTokens.CardRadius,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, DarbakWidgetDesignTokens.cardBorder()),
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Icon(Icons.Default.Memory, null, tint = widgetColors.accent, modifier = Modifier.size(18.dp))
-                        Text("حالة النظام والجهاز", style = MaterialTheme.typography.labelMedium.copy(fontWeight = FontWeight.Bold), color = widgetColors.accent)
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("ذاكرة RAM", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
-                        Text(ramStr, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text("ذاكرة التخزين", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
-                        Text(storageStr, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
-                    }
-                }
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text("استهلاك CPU", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
-                        Text(cpuStr, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
-                    }
-                    Column(Modifier.weight(1f)) {
-                        Text("حرارة الجهاز", style = MaterialTheme.typography.labelSmall, color = widgetColors.secondary)
-                        Text(tempStr, style = MaterialTheme.typography.titleSmall.copy(fontWeight = FontWeight.Bold), color = widgetColors.primary, maxLines = 1)
+                    Row(
+                        modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("RAM", style = DarbakWidgetDesignTokens.Typography.labelSmall, color = widgetColors.secondary)
+                            Text(if (vitals.isRamAvailable) "${vitals.ramUsedPercent}%" else "غير متاح", style = DarbakWidgetDesignTokens.Typography.titleMedium, color = widgetColors.primary)
+                        }
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text("التخزين", style = DarbakWidgetDesignTokens.Typography.labelSmall, color = widgetColors.secondary)
+                            Text(if (vitals.isStorageAvailable) "${vitals.storageUsedPercent}%" else "غير متاح", style = DarbakWidgetDesignTokens.Typography.titleMedium, color = widgetColors.primary)
+                        }
                     }
                 }
             }
-        }
-    }
-}
+            WidgetFamily.INSTRUMENT -> {
+                Surface(
+                    color = DarbakWidgetDesignTokens.instrumentSurface(),
+                    shape = DarbakWidgetDesignTokens.InstrumentRadius,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, DarbakWidgetDesignTokens.instrumentBorder()),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(10.dp),
+                        verticalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Icon(Icons.Default.Memory, null, tint = widgetColors.accent, modifier = Modifier.size(16.dp))
+                                Text("حالة النظام والجهاز", style = DarbakWidgetDesignTokens.Typography.labelMedium, color = widgetColors.accent)
+                            }
+                        }
 
-@Composable
-private fun SquareControlButton(
-    icon: ImageVector,
-    label: String,
-    tint: Color? = null,
-    onClick: () -> Unit
-) {
-    val widgetColors = resolvedWidgetColors()
-    Surface(
-        color = resolvedWidgetSurface(CarbonSurface),
-        shape = RoundedCornerShape(10.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, CarbonCardBorder),
-        modifier = Modifier.size(54.dp)
-    ) {
-        IconButton(onClick = onClick) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Icon(imageVector = icon, contentDescription = label, tint = tint ?: widgetColors.primary, modifier = Modifier.size(22.dp))
-                Text(text = label, style = MaterialTheme.typography.labelSmall.copy(fontSize = 9.sp), color = widgetColors.secondary)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text("ذاكرة RAM", style = DarbakWidgetDesignTokens.Typography.labelSmall, color = widgetColors.secondary)
+                                Text(ramStr, style = DarbakWidgetDesignTokens.Typography.bodySmall, color = widgetColors.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text("التخزين", style = DarbakWidgetDesignTokens.Typography.labelSmall, color = widgetColors.secondary)
+                                Text(storageStr, style = DarbakWidgetDesignTokens.Typography.bodySmall, color = widgetColors.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column(Modifier.weight(1f)) {
+                                Text("استهلاك CPU", style = DarbakWidgetDesignTokens.Typography.labelSmall, color = widgetColors.secondary)
+                                Text(cpuStr, style = DarbakWidgetDesignTokens.Typography.bodySmall, color = widgetColors.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                            Column(Modifier.weight(1f)) {
+                                Text("حرارة الجهاز", style = DarbakWidgetDesignTokens.Typography.labelSmall, color = widgetColors.secondary)
+                                Text(tempStr, style = DarbakWidgetDesignTokens.Typography.bodySmall, color = widgetColors.primary, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                    }
+                }
             }
         }
     }
