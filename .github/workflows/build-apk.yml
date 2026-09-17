@@ -2,7 +2,7 @@ name: Build Launcher 2026 APK
 
 on:
   push:
-    branches: [ main, darbak-platform-v1 ]
+    branches: [ main, darbak-platform-v1, dev/launcher-refresh ]
   pull_request:
     branches: [ main ]
     types: [ opened, synchronize, reopened ]
