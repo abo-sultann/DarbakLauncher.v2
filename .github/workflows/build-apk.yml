@@ -62,7 +62,7 @@ jobs:
       - name: Upload Stable APK
         uses: actions/upload-artifact@v4
         with:
-          name: Launcher-2026-Stable-${{ github.ref_name }}
+          name: DarbakLauncher-v2-dev
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 1
