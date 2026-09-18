@@ -20,7 +20,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w1024dp-h600dp-land-mdpi", sdk = [25])
+@Config(qualifiers = "w1024dp-h600dp-land-mdpi", sdk = [35])
 class GreetingScreenshotTest {
 
     @get:Rule
@@ -31,10 +31,11 @@ class GreetingScreenshotTest {
         composeTestRule.setContent {
             Launcher2026Theme {
                 Box(Modifier.fillMaxSize().background(CarbonDark), contentAlignment = Alignment.Center) {
-                    Text("Darbak Launcher v2 • API 25")
+                    Text("Darbak Launcher v2 • target head unit API 25")
                 }
             }
         }
+        composeTestRule.waitForIdle()
         composeTestRule.onRoot().captureRoboImage(filePath = "src/test/screenshots/greeting.png")
     }
 }
