@@ -2,7 +2,7 @@ name: Build Launcher 2026 APK
 
 on:
   push:
-    branches: [ main, darbak-platform-v1, dev/launcher-refresh ]
+    branches: [ main, darbak-platform-v1, dev/launcher-refresh, release/launcher-final ]
   pull_request:
     branches: [ main, dev/launcher-refresh ]
     types: [ opened, synchronize, reopened ]
@@ -13,7 +13,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: write
 
 env:
   GRADLE_OPTS: -Dorg.gradle.jvmargs=-Xmx2g -Dfile.encoding=UTF-8
@@ -24,6 +24,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up JDK 17
         uses: actions/setup-java@v5
@@ -56,11 +58,54 @@ jobs:
           KEYSTORE_PATH: ${{ github.workspace }}/app/launcher-stable.jks
         run: ./gradlew :app:assembleRelease --stacktrace --no-daemon
 
+      - name: Prepare production APK
+        if: github.ref == 'refs/heads/release/launcher-final'
+        run: |
+          cp app/build/outputs/apk/release/app-release.apk DarbakLauncher-2.3.0.apk
+          echo "APK_SHA256=$(sha256sum DarbakLauncher-2.3.0.apk | awk '{print $1}')" >> "$GITHUB_ENV"
+          echo "APK_SIZE=$(stat -c%s DarbakLauncher-2.3.0.apk)" >> "$GITHUB_ENV"
+
+      - name: Publish GitHub release asset
+        if: github.ref == 'refs/heads/release/launcher-final'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view v2.3.0 >/dev/null 2>&1; then
+            gh release upload v2.3.0 DarbakLauncher-2.3.0.apk --clobber
+          else
+            gh release create v2.3.0 DarbakLauncher-2.3.0.apk \
+              --target "$GITHUB_SHA" \
+              --title "Darbak Launcher 2.3.0" \
+              --notes "Final merged Darbak Launcher release for the original Launcher 2026 package."
+          fi
+
+      - name: Publish update manifest
+        if: github.ref == 'refs/heads/release/launcher-final'
+        run: |
+          cat > update/launcher-update.json <<EOF
+          {
+            "versionCode": 20300,
+            "versionName": "2.3.0",
+            "apkUrl": "https://github.com/abo-sultann/DarbakLauncher.v2/releases/download/v2.3.0/DarbakLauncher-2.3.0.apk",
+            "notes": "النسخة النهائية المدمجة من Darbak Launcher",
+            "mandatory": false,
+            "sha256": "${APK_SHA256}",
+            "size": ${APK_SIZE}
+          }
+          EOF
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add update/launcher-update.json
+          if ! git diff --cached --quiet; then
+            git commit -m "release: publish 2.3.0 update manifest [skip ci]"
+            git push origin HEAD:release/launcher-final
+          fi
+
       - name: Upload launcher APK
         uses: actions/upload-artifact@v4
         with:
-          name: DarbakLauncher-v2-dev
-          path: app/build/outputs/apk/release/*.apk
+          name: ${{ github.ref == 'refs/heads/release/launcher-final' && 'DarbakLauncher-2.3.0-final' || 'DarbakLauncher-v2-dev' }}
+          path: ${{ github.ref == 'refs/heads/release/launcher-final' && 'DarbakLauncher-2.3.0.apk' || 'app/build/outputs/apk/release/*.apk' }}
           if-no-files-found: error
           retention-days: 1
 
