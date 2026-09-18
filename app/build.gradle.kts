@@ -13,9 +13,9 @@ android {
     applicationId = "com.aistudio.carlauncher.lzrk26"
     minSdk = 25
     targetSdk = 36
-    versionCode = 20010
-    versionName = "2.0.10"
-    buildConfigField("String", "UPDATE_MANIFEST_URL", "\"https://drive.google.com/uc?export=download&id=15Ki1PBf0_erdbITrYh8k80Kt4rWC5yLi\"")
+    versionCode = 20300
+    versionName = "2.3.0"
+    buildConfigField("String", "UPDATE_MANIFEST_URL", "\"https://raw.githubusercontent.com/abo-sultann/DarbakLauncher.v2/release/launcher-final/update/launcher-update.json\"")
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
