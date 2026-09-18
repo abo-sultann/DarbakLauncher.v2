@@ -2,8 +2,8 @@
   "versionCode": 20300,
   "versionName": "2.3.0",
   "apkUrl": "https://github.com/abo-sultann/DarbakLauncher.v2/releases/download/v2.3.0/DarbakLauncher-2.3.0.apk",
-  "notes": "Darbak Launcher 2.3.0 final release",
+  "notes": "النسخة النهائية المدمجة من Darbak Launcher",
   "mandatory": false,
-  "sha256": "PENDING",
-  "size": 0
+  "sha256": "e8b5bd90c60ce9a95e92550dc568ad7b394241fe92215cf2fd01218a1c7f2006",
+  "size": 13328536
 }
