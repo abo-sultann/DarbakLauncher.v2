@@ -28,12 +28,13 @@ import com.example.model.WidgetItem
 import com.example.model.WidgetSizePreset
 import com.example.model.WidgetSurfaceStyle
 import com.example.model.WidgetTone
-import com.example.model.WidgetType
+import com.example.model.toFamily
 import com.example.ui.theme.*
 
 /**
- * Widget V3 keeps the widget itself clean. Editing controls live in a fixed popup dock,
- * so even a tiny clock can be selected, moved, recolored or deleted without covering it.
+ * The frame is deliberately visually neutral. Production widgets own their visual family
+ * (Minimal / Darbak Card / Instrument); the frame only supplies user colour/surface tokens and
+ * design-mode controls. This prevents the old per-widget silhouettes from leaking back into v2.
  */
 @Composable
 fun WidgetFrame(
@@ -61,59 +62,65 @@ fun WidgetFrame(
     content: @Composable () -> Unit
 ) {
     val tone = WidgetTone.fromArgb(widgetItem.foregroundColorArgb)
-    val surfaceOpacity = widgetItem.surfaceOpacity
+    val family = widgetItem.style.toFamily()
+    val surfaceOpacity = widgetItem.surfaceOpacity.coerceIn(0f, 1f)
     val foregroundColor = Color(tone.argb)
     val accentColor = Color(tone.argb)
+    val shape = DarbakWidgetDesignTokens.radiusFor(family)
 
-    // A widget type keeps a recognizable silhouette even when it uses the same color palette.
-    val shape = when (widgetItem.type) {
-        WidgetType.CLOCK -> RoundedCornerShape(28.dp)
-        WidgetType.SPEEDOMETER -> RoundedCornerShape(8.dp)
-        WidgetType.DATE -> RoundedCornerShape(topStart = 24.dp, topEnd = 8.dp, bottomEnd = 24.dp, bottomStart = 8.dp)
-        WidgetType.GPS -> RoundedCornerShape(10.dp)
-        WidgetType.MUSIC -> RoundedCornerShape(24.dp)
-        WidgetType.MAP -> RoundedCornerShape(18.dp)
-        WidgetType.TRIP -> RoundedCornerShape(12.dp)
-        WidgetType.APPS -> RoundedCornerShape(22.dp)
-        WidgetType.CONTROLS -> RoundedCornerShape(20.dp)
-        WidgetType.MAINTENANCE, WidgetType.DARBAK_CENTER, WidgetType.OFFROAD_INSTRUMENTS, WidgetType.HEAD_UNIT_VITALS -> RoundedCornerShape(18.dp)
-    }
-    val normalBackground = when (widgetItem.surfaceStyle) {
-        WidgetSurfaceStyle.TRANSPARENT -> Color.Transparent
-        WidgetSurfaceStyle.GLASS -> if (tone == WidgetTone.BLACK) {
-            Color.White.copy(alpha = (.26f + .46f * surfaceOpacity).coerceAtMost(.74f))
-        } else {
-            Color.Black.copy(alpha = (if (isNightMode) .45f + .40f * surfaceOpacity else .20f + .48f * surfaceOpacity).coerceAtMost(.88f))
+    val familySurface: Color? = if (widgetItem.surfaceStyle == WidgetSurfaceStyle.TRANSPARENT) {
+        null
+    } else if (tone == WidgetTone.BLACK) {
+        val alpha = when (widgetItem.surfaceStyle) {
+            WidgetSurfaceStyle.GLASS -> (.46f + .32f * surfaceOpacity).coerceAtMost(.82f)
+            WidgetSurfaceStyle.CARD -> (.72f + .24f * surfaceOpacity).coerceAtMost(.98f)
+            WidgetSurfaceStyle.TRANSPARENT -> 0f
         }
-        WidgetSurfaceStyle.CARD -> if (tone == WidgetTone.BLACK) {
-            Color.White.copy(alpha = (.66f + .32f * surfaceOpacity).coerceAtMost(.98f))
-        } else {
-            Color.Black.copy(alpha = (if (isNightMode) .78f + .20f * surfaceOpacity else .64f + .33f * surfaceOpacity).coerceAtMost(.98f))
+        Color.White.copy(alpha = alpha)
+    } else {
+        when (family) {
+            WidgetFamily.MINIMAL -> {
+                val alpha = when (widgetItem.surfaceStyle) {
+                    WidgetSurfaceStyle.GLASS -> (if (isNightMode) .40f else .20f) + .38f * surfaceOpacity
+                    WidgetSurfaceStyle.CARD -> (if (isNightMode) .72f else .58f) + .28f * surfaceOpacity
+                    WidgetSurfaceStyle.TRANSPARENT -> 0f
+                }.coerceAtMost(.96f)
+                Color.Black.copy(alpha = alpha)
+            }
+            WidgetFamily.DARBAK_CARD -> DarbakWidgetDesignTokens.cardSurfaceColor(isNightMode, surfaceOpacity)
+            WidgetFamily.INSTRUMENT -> DarbakWidgetDesignTokens.instrumentSurfaceColor(isNightMode, surfaceOpacity)
         }
     }
+
     val outlineColor = when {
         isDesignMode && isSelected -> CyanNeon
-        isDesignMode -> AmberRacing.copy(alpha = .18f)
-        widgetItem.showBorder -> foregroundColor.copy(alpha = .75f)
+        isDesignMode -> AmberRacing.copy(alpha = .22f)
+        widgetItem.showBorder -> foregroundColor.copy(alpha = .68f)
         else -> Color.Transparent
     }
     val outlineWidth = if (isDesignMode && isSelected) 2.dp else if (isDesignMode || widgetItem.showBorder) 1.dp else 0.dp
 
     Box(
         modifier = modifier
-            .alpha(widgetItem.opacity)
-            .background(normalBackground, shape)
+            .alpha(widgetItem.opacity.coerceIn(.2f, 1f))
+            .then(
+                if (family == WidgetFamily.MINIMAL && familySurface != null) {
+                    Modifier.background(familySurface, shape)
+                } else Modifier
+            )
             .then(if (outlineWidth > 0.dp) Modifier.border(outlineWidth, outlineColor, shape) else Modifier)
     ) {
         CompositionLocalProvider(
-            LocalWidgetVisualTokens provides WidgetVisualTokens(foregroundColor, accentColor, normalBackground.takeIf { it != Color.Transparent }),
+            LocalWidgetVisualTokens provides WidgetVisualTokens(
+                foreground = foregroundColor,
+                accent = accentColor,
+                surface = familySurface
+            ),
             LocalWidgetForegroundColor provides foregroundColor
         ) {
             content()
         }
 
-        // A transparent editor layer sits above widget content. This is essential for map and
-        // app widgets whose own click targets otherwise intercept the first touch.
         if (isDesignMode) {
             Box(
                 Modifier
@@ -226,7 +233,10 @@ private fun WidgetV3ControlDock(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(widgetItem.type.arabicTitle, color = CyanNeon, fontWeight = FontWeight.Black, fontSize = 11.sp, modifier = Modifier.widthIn(min = 62.dp))
+                Column(Modifier.widthIn(min = 88.dp)) {
+                    Text(widgetItem.type.arabicTitle, color = CyanNeon, fontWeight = FontWeight.Black, fontSize = 10.sp)
+                    Text(widgetItem.style.toFamily().arabicTitle, color = TextSecondary, fontSize = 8.sp)
+                }
                 FilterChip(selected = !placementSection, onClick = { placementSection = false }, label = { Text("المظهر", fontSize = 9.sp) }, leadingIcon = { Icon(Icons.Default.Palette, null, Modifier.size(14.dp)) })
                 FilterChip(selected = placementSection, onClick = { placementSection = true }, label = { Text("المكان والمقاس", fontSize = 9.sp) }, leadingIcon = { Icon(Icons.Default.OpenWith, null, Modifier.size(14.dp)) })
                 Spacer(Modifier.weight(1f))
@@ -258,7 +268,6 @@ private fun WidgetV3ControlDock(
                 CompactEditorButton(Icons.Default.KeyboardArrowDown, "أسفل", TextPrimary, { onNudge(0f, 18f) })
                 CompactEditorButton(Icons.Default.ZoomOut, "تصغير", TextSecondary, { onResizeStep(-24f, -15f) })
                 CompactEditorButton(Icons.Default.ZoomIn, "تكبير", CyanNeon, { onResizeStep(24f, 15f) })
-
             }
 
             if (!placementSection) Row(
@@ -266,7 +275,7 @@ private fun WidgetV3ControlDock(
                 horizontalArrangement = Arrangement.spacedBy(4.dp),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                CompactEditorButton(Icons.Default.Palette, "الشكل", CyanNeon, onChangeStyle, "btn_change_style_${widgetItem.id}")
+                CompactEditorButton(Icons.Default.Palette, "العائلة البصرية", CyanNeon, onChangeStyle, "btn_change_style_${widgetItem.id}")
                 WidgetSurfaceStyle.values().forEach { surface ->
                     val selected = widgetItem.surfaceStyle == surface
                     FilterChip(selected = selected, onClick = { onSurfaceChange(surface) }, label = { Text(surface.arabicName, fontSize = 8.sp) })
@@ -279,14 +288,14 @@ private fun WidgetV3ControlDock(
                 }
 
                 Spacer(Modifier.weight(1f))
-                Text("خلفية", color = TextSecondary, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                CompactEditorButton(Icons.Default.Remove, "خلفية أخف", TextPrimary, { onSurfaceOpacity(surfaceOpacity - .10f) })
+                Text("الخلفية", color = TextSecondary, fontSize = 8.sp, fontWeight = FontWeight.Bold)
+                CompactEditorButton(Icons.Default.Remove, "أخف", TextPrimary, { onSurfaceOpacity((surfaceOpacity - .10f).coerceIn(0f, 1f)) })
                 Text("${(surfaceOpacity * 100).toInt()}%", color = CyanNeon, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                CompactEditorButton(Icons.Default.Add, "خلفية أوضح", TextPrimary, { onSurfaceOpacity(surfaceOpacity + .10f) })
+                CompactEditorButton(Icons.Default.Add, "أوضح", TextPrimary, { onSurfaceOpacity((surfaceOpacity + .10f).coerceIn(0f, 1f)) })
                 VerticalDivider(Modifier.height(22.dp), color = CarbonCardBorder)
-                CompactEditorButton(Icons.Default.Remove, "شفافية الودجت أقل", TextPrimary, { onOpacityChange(widgetItem.opacity - .10f) })
+                CompactEditorButton(Icons.Default.Remove, "شفافية أكثر", TextPrimary, { onOpacityChange((widgetItem.opacity - .10f).coerceIn(.2f, 1f)) })
                 Text("${(widgetItem.opacity * 100).toInt()}%", color = CyanNeon, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                CompactEditorButton(Icons.Default.Add, "شفافية الودجت أكثر", TextPrimary, { onOpacityChange(widgetItem.opacity + .10f) })
+                CompactEditorButton(Icons.Default.Add, "شفافية أقل", TextPrimary, { onOpacityChange((widgetItem.opacity + .10f).coerceIn(.2f, 1f)) })
             }
         }
     }

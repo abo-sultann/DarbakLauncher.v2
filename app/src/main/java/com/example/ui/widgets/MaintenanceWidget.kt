@@ -30,6 +30,8 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import com.example.model.WidgetStyle
+import com.example.model.toFamily
+import com.example.ui.components.resolvedWidgetColors
 import com.example.ui.theme.*
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -61,6 +63,7 @@ fun MaintenanceWidget(style: WidgetStyle, interactionEnabled: Boolean = true) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     var rows by remember { mutableStateOf(emptyList<MaintenanceRow>()) }
+    val widgetColors = resolvedWidgetColors()
 
     fun reload() {
         scope.launch {
@@ -91,23 +94,36 @@ fun MaintenanceWidget(style: WidgetStyle, interactionEnabled: Boolean = true) {
         }
     }
 
+    val family = style.toFamily()
+    val shape = DarbakWidgetDesignTokens.radiusFor(family)
+    val surfaceColor = when (family) {
+        WidgetFamily.MINIMAL -> Color.Transparent
+        WidgetFamily.DARBAK_CARD -> DarbakWidgetDesignTokens.cardSurface()
+        WidgetFamily.INSTRUMENT -> DarbakWidgetDesignTokens.instrumentSurface()
+    }
+    val borderColor = when (family) {
+        WidgetFamily.MINIMAL -> Color.Transparent
+        WidgetFamily.DARBAK_CARD -> DarbakWidgetDesignTokens.cardBorder()
+        WidgetFamily.INSTRUMENT -> DarbakWidgetDesignTokens.instrumentBorder()
+    }
+
     Surface(
-        color = CarbonDark.copy(alpha = .64f),
-        shape = RoundedCornerShape(18.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = .14f)),
+        color = surfaceColor,
+        shape = shape,
+        border = androidx.compose.foundation.BorderStroke(1.dp, borderColor),
         modifier = Modifier
             .fillMaxSize()
-            .clip(RoundedCornerShape(18.dp))
+            .padding(DarbakWidgetDesignTokens.ContentPadding)
             .then(
                 if (interactionEnabled) Modifier.clickable {
                     context.packageManager.getLaunchIntentForPackage(MAINTENANCE_PACKAGE)?.let(context::startActivity)
                 } else Modifier
             )
     ) {
-        when (style) {
-            WidgetStyle.MAINTENANCE_GRID -> MaintenanceGrid(displayRows)
-            WidgetStyle.MAINTENANCE_ALERTS -> MaintenanceAlerts(displayRows)
-            else -> MaintenanceVertical(displayRows)
+        when (family) {
+            WidgetFamily.MINIMAL -> MaintenanceVertical(displayRows)
+            WidgetFamily.DARBAK_CARD -> MaintenanceAlerts(displayRows)
+            WidgetFamily.INSTRUMENT -> MaintenanceGrid(displayRows)
         }
     }
 }
@@ -119,7 +135,7 @@ private fun MaintenanceVertical(rows: List<MaintenanceRow>) {
         verticalArrangement = Arrangement.SpaceEvenly,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        rows.forEach { row -> MaintenanceCompactRow(row) }
+        rows.take(4).forEach { row -> MaintenanceCompactRow(row) }
     }
 }
 
@@ -149,27 +165,26 @@ private fun MaintenanceGridCell(row: MaintenanceRow, modifier: Modifier = Modifi
     Surface(
         modifier = modifier.fillMaxHeight(),
         color = Color.White.copy(alpha = .035f),
-        shape = RoundedCornerShape(12.dp),
+        shape = RoundedCornerShape(8.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = .20f))
     ) {
         Row(
-            modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 5.dp),
+            modifier = Modifier.fillMaxSize().padding(horizontal = 6.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(7.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
         ) {
-            ProgressGlyph(row, Modifier.size(39.dp), 2.6f)
+            ProgressGlyph(row, Modifier.size(32.dp), 2.2f)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                Text(kindName(row.kind), color = TextPrimary, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
+                Text(kindName(row.kind), color = TextPrimary, style = DarbakWidgetDesignTokens.Typography.bodySmall, maxLines = 1)
                 if (row.configured) {
                     Text(
                         "${formatNumber(row.remaining)} ${unitName(row)}",
                         color = accent,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Black,
+                        style = DarbakWidgetDesignTokens.Typography.labelSmall,
                         maxLines = 1
                     )
                 } else {
-                    Text("غير مهيأ", color = TextMuted, fontSize = 8.sp, maxLines = 1)
+                    Text("غير مهيأ", color = TextMuted, style = DarbakWidgetDesignTokens.Typography.bodySmall, maxLines = 1)
                 }
             }
         }
@@ -185,11 +200,11 @@ private fun MaintenanceAlerts(rows: List<MaintenanceRow>) {
         ).take(3)
     }
     Column(
-        modifier = Modifier.fillMaxSize().padding(horizontal = 10.dp, vertical = 8.dp),
-        verticalArrangement = Arrangement.spacedBy(5.dp)
+        modifier = Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 6.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
     ) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-            Text("الصيانة", color = TextPrimary, fontSize = 11.sp, fontWeight = FontWeight.Black)
+            Text("الصيانة", color = TextPrimary, style = DarbakWidgetDesignTokens.Typography.labelMedium)
             Spacer(Modifier.weight(1f))
             val dueCount = rows.count { it.health == MaintenanceHealth.DUE }
             val soonCount = rows.count { it.health == MaintenanceHealth.SOON }
@@ -206,8 +221,7 @@ private fun MaintenanceAlerts(rows: List<MaintenanceRow>) {
                     rows.any { it.configured } -> EmeraldSafe
                     else -> TextMuted
                 },
-                fontSize = 8.sp,
-                fontWeight = FontWeight.Bold
+                style = DarbakWidgetDesignTokens.Typography.bodySmall
             )
         }
         important.forEach { row ->
@@ -222,22 +236,21 @@ private fun MaintenanceAlertRow(row: MaintenanceRow, modifier: Modifier = Modifi
     Row(
         modifier = modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
         MaintenanceGlyph(
             kind = row.kind,
             tint = if (row.configured) TextPrimary else TextMuted,
-            modifier = Modifier.size(25.dp)
+            modifier = Modifier.size(20.dp)
         )
         Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-            Text(kindName(row.kind), color = TextPrimary, fontSize = 9.sp, fontWeight = FontWeight.Bold, maxLines = 1)
-            Text(statusName(row.health), color = accent, fontSize = 7.sp, maxLines = 1)
+            Text(kindName(row.kind), color = TextPrimary, style = DarbakWidgetDesignTokens.Typography.bodySmall, maxLines = 1)
+            Text(statusName(row.health), color = accent, style = DarbakWidgetDesignTokens.Typography.bodySmall, maxLines = 1)
         }
         Text(
             if (row.configured) "${formatNumber(row.remaining)} ${unitName(row)}" else "—",
             color = accent,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Black,
+            style = DarbakWidgetDesignTokens.Typography.labelSmall,
             maxLines = 1
         )
     }
@@ -247,17 +260,17 @@ private fun MaintenanceAlertRow(row: MaintenanceRow, modifier: Modifier = Modifi
 private fun MaintenanceCompactRow(row: MaintenanceRow) {
     val accent = healthColor(row.health)
     Row(
-        modifier = Modifier.fillMaxWidth().heightIn(min = 54.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
-        ProgressGlyph(row, Modifier.size(43.dp), 3f)
+        ProgressGlyph(row, Modifier.size(32.dp), 2.2f)
         Column(Modifier.weight(1f), horizontalAlignment = Alignment.End) {
             if (row.configured) {
-                Text(formatNumber(row.remaining), color = accent, fontSize = 15.sp, fontWeight = FontWeight.Black, maxLines = 1)
-                Text(unitName(row), color = TextSecondary, fontSize = 7.sp, maxLines = 1)
+                Text(formatNumber(row.remaining), color = accent, style = DarbakWidgetDesignTokens.Typography.titleMedium, maxLines = 1)
+                Text(unitName(row), color = TextSecondary, style = DarbakWidgetDesignTokens.Typography.bodySmall, maxLines = 1)
             } else {
-                Text("—", color = TextMuted, fontSize = 17.sp, fontWeight = FontWeight.Bold)
+                Text("—", color = TextMuted, style = DarbakWidgetDesignTokens.Typography.bodySmall)
             }
         }
     }
@@ -294,11 +307,6 @@ private fun ProgressGlyph(row: MaintenanceRow, modifier: Modifier, strokeDp: Flo
     }
 }
 
-/**
- * Purpose-built automotive glyphs. They are drawn with primitives instead of depending on
- * generic phone UI icons, which keeps the launcher lightweight and gives the maintenance widget
- * a consistent instrument-cluster visual language on API 25.
- */
 @Composable
 private fun MaintenanceGlyph(kind: MaintenanceKind, tint: Color, modifier: Modifier = Modifier) {
     Canvas(modifier) {
