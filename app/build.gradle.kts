@@ -15,7 +15,8 @@ android {
     targetSdk = 36
     versionCode = 20300
     versionName = "2.3.0"
-    buildConfigField("String", "UPDATE_MANIFEST_URL", "\"https://raw.githubusercontent.com/abo-sultann/DarbakLauncher.v2/release/launcher-final/update/launcher-update.json\"")
+    buildConfigField("String", "UPDATE_MANIFEST_URL", "\"https://drive.google.com/uc?export=download&id=1Reqp8Au2ityF6ZhZTRAZymzxn7FshLym\"")
+    buildConfigField("String", "UPDATE_MANIFEST_FALLBACK_URL", "\"https://raw.githubusercontent.com/abo-sultann/DarbakLauncher.v2/release/launcher-final/update/launcher-update.json\"")
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
   }
 
