@@ -19,8 +19,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.WidgetStyle
+import com.example.model.toFamily
+import com.example.ui.components.ResolvedWidgetColors
 import com.example.ui.components.resolvedWidgetColors
-import com.example.ui.components.resolvedWidgetSurface
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -45,61 +46,95 @@ fun ClockWidget(style: WidgetStyle, is24Hour: Boolean, modifier: Modifier = Modi
     val dateStr = SimpleDateFormat("yyyy/MM/dd", Locale("ar")).format(currentTime)
     val dayStr = SimpleDateFormat("EEEE", Locale("ar")).format(currentTime)
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-        val micro = maxWidth < 115.dp || maxHeight < 58.dp
-        val tiny = maxWidth < 155.dp || maxHeight < 82.dp
-        val compact = maxWidth < 225.dp || maxHeight < 125.dp
-        val bigTime = when { micro -> 22.sp; tiny -> 30.sp; compact -> 39.sp; else -> 52.sp }
-        val mediumTime = when { micro -> 20.sp; tiny -> 27.sp; compact -> 34.sp; else -> 44.sp }
-        val smallText = when { micro -> 7.sp; tiny -> 8.sp; compact -> 10.sp; else -> 12.sp }
+    val family = style.toFamily()
 
-        when (style) {
-            WidgetStyle.CLOCK_DIGITAL_LARGE -> {
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(DarbakWidgetDesignTokens.ContentPadding),
+        contentAlignment = Alignment.Center
+    ) {
+        val sizeCategory = WidgetSizeCategory.from(maxWidth, maxHeight)
+
+        when (family) {
+            WidgetFamily.MINIMAL -> {
                 Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                    Text(timeStr, fontSize = bigTime, fontWeight = FontWeight.Black, color = widgetColors.accent, maxLines = 1)
-                    if (!is24Hour && !micro) Text(amPmStr, fontSize = smallText, color = widgetColors.secondary, modifier = Modifier.padding(bottom = 4.dp))
+                    Text(
+                        timeStr,
+                        fontSize = when (sizeCategory) {
+                            WidgetSizeCategory.COMPACT -> 28.sp
+                            WidgetSizeCategory.MEDIUM -> 38.sp
+                            WidgetSizeCategory.LARGE_WIDE -> 52.sp
+                        },
+                        fontWeight = FontWeight.Black,
+                        color = widgetColors.primary,
+                        maxLines = 1
+                    )
+                    if (!is24Hour && sizeCategory != WidgetSizeCategory.COMPACT) {
+                        Text(amPmStr, fontSize = 10.sp, color = widgetColors.secondary, modifier = Modifier.padding(bottom = 4.dp))
+                    }
                 }
             }
-            WidgetStyle.CLOCK_WITH_DATE -> {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    Text(timeStr, fontSize = mediumTime, fontWeight = FontWeight.Bold, color = widgetColors.primary, maxLines = 1)
-                    if (!micro) Text("$dayStr • $dateStr", fontSize = smallText, color = widgetColors.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                }
-            }
-            WidgetStyle.CLOCK_WITH_SECONDS -> Text(timeWithSecStr, fontSize = if (micro) 18.sp else if (tiny) 23.sp else if (compact) 29.sp else 39.sp, fontWeight = FontWeight.Bold, color = widgetColors.accent, maxLines = 1)
-            WidgetStyle.CLOCK_MINIMAL -> Text(timeStr, fontSize = bigTime, fontWeight = FontWeight.Light, color = widgetColors.primary, maxLines = 1)
-            WidgetStyle.CLOCK_CARD -> {
-                Surface(color = resolvedWidgetSurface(CarbonSurface.copy(alpha = .90f)), shape = RoundedCornerShape(12.dp), border = androidx.compose.foundation.BorderStroke(1.dp, widgetColors.accent.copy(alpha = .30f)), modifier = Modifier.fillMaxSize()) {
-                    Row(Modifier.fillMaxSize().padding(if (compact) 6.dp else 10.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceAround) {
-                        if (!tiny) Icon(Icons.Default.AccessTime, null, tint = widgetColors.accent, modifier = Modifier.size(if (compact) 23.dp else 33.dp))
+            WidgetFamily.DARBAK_CARD -> {
+                Surface(
+                    color = DarbakWidgetDesignTokens.cardSurface(),
+                    shape = DarbakWidgetDesignTokens.CardRadius,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, DarbakWidgetDesignTokens.cardBorder()),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Row(
+                        Modifier.fillMaxSize().padding(horizontal = 8.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceAround
+                    ) {
+                        if (sizeCategory != WidgetSizeCategory.COMPACT) {
+                            Icon(Icons.Default.AccessTime, null, tint = widgetColors.accent, modifier = Modifier.size(28.dp))
+                        }
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text(timeStr, fontSize = if (micro) 20.sp else if (tiny) 25.sp else if (compact) 30.sp else 35.sp, fontWeight = FontWeight.Bold, color = widgetColors.primary, maxLines = 1)
-                            if (!tiny) Text("$dayStr • $dateStr", fontSize = smallText, color = widgetColors.accent, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            Text(
+                                timeStr,
+                                fontSize = if (sizeCategory == WidgetSizeCategory.COMPACT) 26.sp else 34.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = widgetColors.primary,
+                                maxLines = 1
+                            )
+                            if (sizeCategory != WidgetSizeCategory.COMPACT) {
+                                Text("$dayStr • $dateStr", color = widgetColors.accent, style = DarbakWidgetDesignTokens.Typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
                         }
                     }
                 }
             }
-            WidgetStyle.CLOCK_AUTOMOTIVE_LARGE -> {
-                Box(
-                    Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(CarbonCard.copy(alpha = .92f), CarbonSurface.copy(alpha = .88f))), RoundedCornerShape(10.dp)).border(1.dp, CarbonCardBorder, RoundedCornerShape(10.dp)).padding(4.dp),
-                    contentAlignment = Alignment.Center
+            WidgetFamily.INSTRUMENT -> {
+                Surface(
+                    color = DarbakWidgetDesignTokens.instrumentSurface(),
+                    shape = DarbakWidgetDesignTokens.InstrumentRadius,
+                    border = androidx.compose.foundation.BorderStroke(1.dp, DarbakWidgetDesignTokens.instrumentBorder()),
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                        Text(timeStr, fontSize = bigTime, fontWeight = FontWeight.Black, color = widgetColors.accent, maxLines = 1)
-                        if (!is24Hour && !micro) Text(amPmStr, fontSize = smallText, fontWeight = FontWeight.Bold, color = widgetColors.secondary, modifier = Modifier.padding(bottom = 5.dp))
+                    Column(
+                        modifier = Modifier.fillMaxSize().padding(8.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Row(verticalAlignment = Alignment.Bottom, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            Text(
+                                timeStr,
+                                fontSize = if (sizeCategory == WidgetSizeCategory.COMPACT) 30.sp else 44.sp,
+                                fontWeight = FontWeight.Black,
+                                color = widgetColors.accent,
+                                maxLines = 1
+                            )
+                            if (!is24Hour && sizeCategory != WidgetSizeCategory.COMPACT) {
+                                Text(amPmStr, fontSize = 10.sp, fontWeight = FontWeight.Bold, color = widgetColors.secondary, modifier = Modifier.padding(bottom = 5.dp))
+                            }
+                        }
+                        if (sizeCategory != WidgetSizeCategory.COMPACT) {
+                            Text("$dayStr • $dateStr", color = widgetColors.primary, style = DarbakWidgetDesignTokens.Typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
                     }
                 }
             }
-            WidgetStyle.CLOCK_DAY_DATE -> {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    Text(timeStr, fontSize = mediumTime, fontWeight = FontWeight.Bold, color = widgetColors.accent, maxLines = 1)
-                    if (!tiny) {
-                        Text(dayStr, fontSize = if (compact) 10.sp else 13.sp, fontWeight = FontWeight.Bold, color = widgetColors.primary, maxLines = 1)
-                        Text(dateStr, fontSize = smallText, color = widgetColors.secondary, maxLines = 1)
-                    }
-                }
-            }
-            else -> Text(timeStr, style = MaterialTheme.typography.displayMedium, color = widgetColors.primary)
         }
     }
 }

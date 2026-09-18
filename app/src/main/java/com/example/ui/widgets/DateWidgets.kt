@@ -17,8 +17,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.model.WidgetStyle
+import com.example.model.toFamily
+import com.example.ui.components.ResolvedWidgetColors
 import com.example.ui.components.resolvedWidgetColors
-import com.example.ui.components.resolvedWidgetSurface
 import com.example.ui.theme.*
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
@@ -42,63 +43,75 @@ fun DateWidget(style: WidgetStyle, modifier: Modifier = Modifier) {
     val gregorian = remember(now) { SimpleDateFormat("yyyy/MM/dd", Locale("ar")).format(now) }
     val hijri = remember(now) { formatHijri(now) }
 
-    BoxWithConstraints(modifier.fillMaxSize().padding(7.dp), contentAlignment = Alignment.Center) {
-        val tiny = maxWidth < 150.dp || maxHeight < 90.dp
-        val compact = maxWidth < 230.dp || maxHeight < 135.dp
-        val big = when { tiny -> 24.sp; compact -> 31.sp; else -> 40.sp }
-        val medium = when { tiny -> 13.sp; compact -> 17.sp; else -> 21.sp }
-        val small = if (tiny) 8.sp else if (compact) 10.sp else 12.sp
+    val family = style.toFamily()
 
-        when (style) {
-            WidgetStyle.DATE_ONLY -> {
+    BoxWithConstraints(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(DarbakWidgetDesignTokens.ContentPadding),
+        contentAlignment = Alignment.Center
+    ) {
+        val sizeCategory = WidgetSizeCategory.from(maxWidth, maxHeight)
+
+        when (family) {
+            WidgetFamily.MINIMAL -> {
                 Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(dayNumber, color = widgetColors.accent, fontSize = big, fontWeight = FontWeight.Black)
+                    Text(
+                        dayNumber,
+                        color = widgetColors.accent,
+                        fontSize = when (sizeCategory) {
+                            WidgetSizeCategory.COMPACT -> 28.sp
+                            WidgetSizeCategory.MEDIUM -> 36.sp
+                            WidgetSizeCategory.LARGE_WIDE -> 48.sp
+                        },
+                        fontWeight = FontWeight.Black
+                    )
                     Column {
-                        Text(monthYear, color = widgetColors.primary, fontSize = medium, fontWeight = FontWeight.Bold, maxLines = 1)
-                        if (!tiny) Text(dayName, color = widgetColors.secondary, fontSize = small)
+                        Text(monthYear, color = widgetColors.primary, style = DarbakWidgetDesignTokens.Typography.titleMedium, maxLines = 1)
+                        if (sizeCategory != WidgetSizeCategory.COMPACT) {
+                            Text(dayName, color = widgetColors.secondary, style = DarbakWidgetDesignTokens.Typography.bodySmall)
+                        }
                     }
                 }
             }
-
-            WidgetStyle.DATE_DAY_DATE -> {
-                Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                    Text(dayName, color = widgetColors.accent, fontSize = big, fontWeight = FontWeight.Black, maxLines = 1)
-                    Text("$dayNumber $monthYear", color = widgetColors.primary, fontSize = medium, fontWeight = FontWeight.SemiBold, maxLines = 1)
-                }
-            }
-
-            WidgetStyle.DATE_HIJRI_GREGORIAN -> {
-                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
-                    CalendarColumn("هجري", hijri, widgetColors.accent, widgetColors.primary, small, medium)
-                    if (!tiny) Box(Modifier.width(1.dp).height(42.dp)) { Surface(color = CarbonCardBorder, modifier = Modifier.fillMaxSize()) {} }
-                    CalendarColumn("ميلادي", gregorian, widgetColors.secondary, widgetColors.primary, small, medium)
-                }
-            }
-
-            WidgetStyle.DATE_CARD -> {
+            WidgetFamily.DARBAK_CARD -> {
                 Surface(
-                    color = resolvedWidgetSurface(CarbonSurface.copy(alpha = .58f)),
-                    shape = RoundedCornerShape(14.dp),
-                    border = BorderStroke(1.dp, widgetColors.accent.copy(alpha = .30f)),
+                    color = DarbakWidgetDesignTokens.cardSurface(),
+                    shape = DarbakWidgetDesignTokens.CardRadius,
+                    border = BorderStroke(1.dp, DarbakWidgetDesignTokens.cardBorder()),
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    Row(Modifier.fillMaxSize().padding(9.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-                        Surface(color = widgetColors.accent.copy(alpha = .16f), shape = RoundedCornerShape(11.dp), modifier = Modifier.size(if (compact) 43.dp else 54.dp)) {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                Icon(Icons.Default.CalendarMonth, null, tint = widgetColors.accent, modifier = Modifier.size(if (compact) 25.dp else 31.dp))
+                    Row(Modifier.fillMaxSize().padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        if (sizeCategory != WidgetSizeCategory.COMPACT) {
+                            Surface(color = widgetColors.accent.copy(alpha = .16f), shape = RoundedCornerShape(10.dp), modifier = Modifier.size(40.dp)) {
+                                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                    Icon(Icons.Default.CalendarMonth, null, tint = widgetColors.accent, modifier = Modifier.size(24.dp))
+                                }
                             }
                         }
                         Column(Modifier.weight(1f), verticalArrangement = Arrangement.Center) {
-                            Text(dayName, color = widgetColors.primary, fontSize = medium, fontWeight = FontWeight.Black, maxLines = 1)
-                            Text("$dayNumber $monthYear", color = widgetColors.accent, fontSize = small, maxLines = 1, overflow = TextOverflow.Ellipsis)
-                            if (!tiny) Text(hijri, color = widgetColors.secondary, fontSize = small, maxLines = 1)
+                            Text(dayName, color = widgetColors.primary, style = DarbakWidgetDesignTokens.Typography.titleMedium, maxLines = 1)
+                            Text("$dayNumber $monthYear", color = widgetColors.accent, style = DarbakWidgetDesignTokens.Typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                         }
                     }
                 }
             }
-
-            WidgetStyle.DATE_MINIMAL -> Text("$dayName، $gregorian", color = widgetColors.primary, fontSize = medium, fontWeight = FontWeight.Light, maxLines = 1)
-            else -> Text("$dayName • $gregorian", color = widgetColors.primary, fontSize = medium, maxLines = 1)
+            WidgetFamily.INSTRUMENT -> {
+                Surface(
+                    color = DarbakWidgetDesignTokens.instrumentSurface(),
+                    shape = DarbakWidgetDesignTokens.InstrumentRadius,
+                    border = BorderStroke(1.dp, DarbakWidgetDesignTokens.instrumentBorder()),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.SpaceEvenly) {
+                        CalendarColumn("هجري", hijri, widgetColors.accent, widgetColors.primary, DarbakWidgetDesignTokens.Typography.labelSmall.fontSize, DarbakWidgetDesignTokens.Typography.titleMedium.fontSize)
+                        if (sizeCategory != WidgetSizeCategory.COMPACT) {
+                            Box(Modifier.width(1.dp).height(32.dp)) { Surface(color = CarbonCardBorder, modifier = Modifier.fillMaxSize()) {} }
+                            CalendarColumn("ميلادي", gregorian, widgetColors.secondary, widgetColors.primary, DarbakWidgetDesignTokens.Typography.labelSmall.fontSize, DarbakWidgetDesignTokens.Typography.titleMedium.fontSize)
+                        }
+                    }
+                }
+            }
         }
     }
 }
