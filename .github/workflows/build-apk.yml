@@ -2,9 +2,9 @@ name: Build Launcher 2026 APK
 
 on:
   push:
-    branches: [ main, darbak-platform-v1, dev/launcher-refresh, feature/widget-redesign-chatgpt ]
+    branches: [ main, darbak-platform-v1, dev/launcher-refresh ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, dev/launcher-refresh ]
     types: [ opened, synchronize, reopened ]
   workflow_dispatch:
 
@@ -51,15 +51,15 @@ jobs:
       - name: Record 1024x600 Roborazzi widget screenshots
         run: ./gradlew :app:recordRoborazziDebug --stacktrace --no-daemon
 
-      - name: Build signed redesign APK
+      - name: Build signed release APK
         env:
           KEYSTORE_PATH: ${{ github.workspace }}/app/launcher-stable.jks
         run: ./gradlew :app:assembleRelease --stacktrace --no-daemon
 
-      - name: Upload redesign APK
+      - name: Upload launcher APK
         uses: actions/upload-artifact@v4
         with:
-          name: DarbakLauncher-v2-widget-redesign
+          name: DarbakLauncher-v2-dev
           path: app/build/outputs/apk/release/*.apk
           if-no-files-found: error
           retention-days: 1
