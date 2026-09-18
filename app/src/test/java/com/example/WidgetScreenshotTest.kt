@@ -26,7 +26,7 @@ import org.robolectric.annotation.GraphicsMode
 
 @RunWith(RobolectricTestRunner::class)
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
-@Config(qualifiers = "w1024dp-h600dp-land-mdpi", sdk = [25])
+@Config(qualifiers = "w1024dp-h600dp-land-mdpi", sdk = [35])
 class WidgetScreenshotTest {
     @get:Rule val composeTestRule = createComposeRule()
 
@@ -161,5 +161,8 @@ class WidgetScreenshotTest {
         }
     }
 
-    private fun capture(path: String) = composeTestRule.onRoot().captureRoboImage(filePath = path)
+    private fun capture(path: String) {
+        composeTestRule.waitForIdle()
+        composeTestRule.onRoot().captureRoboImage(filePath = path)
+    }
 }
